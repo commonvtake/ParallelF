@@ -16,6 +16,7 @@ env:
   GO_VERSION: "1.27"
   NODE_VERSION: "22"
   PYTHON_VERSION: "3.12"
+  UV_VERSION: "0.11.32"
 
 jobs:
   contracts:
@@ -136,3 +137,135 @@ jobs:
 
       - name: Vulnerability scan
         run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  python:
+    name: Python (lint, types, unit tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: pipx install uv==${{ env.UV_VERSION }}
+
+      - name: Install dependencies from the lockfile
+        run: uv sync --locked --all-packages
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Type-check
+        run: uv run mypy
+
+      - name: Test
+        run: uv run pytest
+
+  web:
+    name: Dashboard (lint, types, unit tests, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web/dashboard
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies from the lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Check generated API types are up to date
+        run: |
+          pnpm run gen:api
+          git diff --exit-code -- lib/api/schema.gen.ts
+
+      - name: Check formatting
+        run: pnpm run format:check
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Type-check
+        run: pnpm run typecheck
+
+      - name: Test
+        run: pnpm run test
+
+      - name: Build
+        run: pnpm run build
+
+  stack:
+    name: Stack (Compose launch, integration and end-to-end tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create .env with generated secrets
+        run: make init
+
+      - name: Build and start the stack
+        run: make up
+
+      - name: Show container state
+        run: make ps
+
+      - name: Smoke test
+        run: make verify
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv and Python dependencies
+        run: |
+          pipx install uv==${{ env.UV_VERSION }}
+          uv sync --locked --all-packages
+
+      - name: Integration tests
+        run: make test-integration
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dashboard dependencies and a browser
+        working-directory: web/dashboard
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: make test-e2e
+
+      - name: Service logs
+        if: always()
+        run: docker compose --env-file .env -f deploy/compose/compose.yaml logs --no-color --tail 300
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            web/dashboard/playwright-report
+            web/dashboard/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop the stack
+        if: always()
+        run: make clean

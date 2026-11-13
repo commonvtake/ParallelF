@@ -55,6 +55,7 @@ jobs:
           pnpm install --lockfile-only
           pnpm install --frozen-lockfile
           pnpm run gen:api
+          pnpm exec prettier --write .
           pnpm list --depth 0
 
       - name: Commit generated files
@@ -69,3 +70,25 @@ jobs:
             git commit -m "chore: generate lockfiles and generated code"
             git push
           fi
+
+      # Best-effort feedback; the real gates are in ci.yml.
+      - name: Python checks
+        if: always() && hashFiles('pyproject.toml') != ''
+        continue-on-error: true
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          uv sync --locked --all-packages
+          uv run ruff check . || true
+          uv run ruff format --check . || true
+          uv run mypy || true
+          uv run pytest || true
+
+      - name: Dashboard checks
+        if: always() && hashFiles('web/dashboard/package.json') != ''
+        continue-on-error: true
+        working-directory: web/dashboard
+        run: |
+          pnpm run lint || true
+          pnpm run typecheck || true
+          pnpm run test || true
+          pnpm run build || true
