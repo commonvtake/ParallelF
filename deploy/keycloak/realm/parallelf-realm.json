@@ -1,0 +1,111 @@
+{
+  "realm": "parallelf",
+  "displayName": "ParallelF (local development)",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      { "name": "owner", "description": "Full control of the platform" },
+      { "name": "admin", "description": "Manages resources and members" },
+      { "name": "operator", "description": "Operates Cloud and VPN resources" },
+      { "name": "analyst", "description": "Reads telemetry and manages incidents" },
+      { "name": "lab-researcher", "description": "Runs Security Lab environments" },
+      { "name": "viewer", "description": "Read-only access" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "parallelf-dashboard",
+      "name": "ParallelF Dashboard",
+      "description": "Confidential client of the dashboard server (authorization code flow with PKCE).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${PF_OIDC_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:3000",
+      "baseUrl": "/",
+      "redirectUris": ["http://localhost:3000/auth/callback"],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/login"
+      },
+      "protocolMappers": [
+        {
+          "name": "parallelf-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "parallelf-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "parallelf-dev-cli",
+      "name": "ParallelF development CLI",
+      "description": "Local development realm only. A public client with the password grant enabled so scripts and tests can obtain access tokens without a browser. Do not create this client in a real deployment.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "protocolMappers": [
+        {
+          "name": "parallelf-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "parallelf-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "owner",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "owner@parallelf.test",
+      "firstName": "Dev",
+      "lastName": "Owner",
+      "credentials": [{ "type": "password", "value": "${PF_DEV_OWNER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["owner"]
+    },
+    {
+      "username": "viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "viewer@parallelf.test",
+      "firstName": "Dev",
+      "lastName": "Viewer",
+      "credentials": [{ "type": "password", "value": "${PF_DEV_VIEWER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["viewer"]
+    }
+  ]
+}
