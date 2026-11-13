@@ -1,0 +1,10 @@
+{
+  "roles": {
+    "owner": ["system.status.read", "core.projects.read", "core.projects.create", "core.projects.delete"],
+    "admin": ["system.status.read", "core.projects.read", "core.projects.create", "core.projects.delete"],
+    "operator": ["system.status.read", "core.projects.read"],
+    "analyst": ["system.status.read", "core.projects.read"],
+    "lab-researcher": ["system.status.read", "core.projects.read"],
+    "viewer": ["system.status.read", "core.projects.read"]
+  }
+}

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+// Domain events published by pf-core.
+//
+// Wire format: the message is encoded as protojson and carried with
+// CloudEvents 1.0 attributes (see api/events/README.md). Changes must stay
+// backward compatible within v1; `buf breaking` enforces this in CI.
+package parallelf.core.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// ProjectCreated is emitted after a project is committed.
+//
+// Subject: pf.core.evt.project.created
+// Type:    parallelf.core.v1.ProjectCreated
+message ProjectCreated {
+  // UUIDv7 of the project.
+  string project_id = 1;
+  // URL-safe unique name of the project.
+  string slug = 2;
+  // Display name.
+  string name = 3;
+  // OIDC subject of the user who created the project.
+  string created_by = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+// ProjectDeleted is emitted after a project is removed.
+//
+// Subject: pf.core.evt.project.deleted
+// Type:    parallelf.core.v1.ProjectDeleted
+message ProjectDeleted {
+  // UUIDv7 of the project.
+  string project_id = 1;
+  // Slug the project had when it was deleted.
+  string slug = 2;
+  // OIDC subject of the user who deleted the project.
+  string deleted_by = 3;
+  google.protobuf.Timestamp deleted_at = 4;
+}

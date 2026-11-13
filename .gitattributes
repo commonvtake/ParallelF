@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.sh text eol=lf
+*.png binary
+*.ico binary
+gen/** linguist-generated=true
+web/dashboard/lib/api/schema.gen.ts linguist-generated=true
