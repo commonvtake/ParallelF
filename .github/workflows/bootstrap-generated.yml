@@ -1,0 +1,122 @@
+# Temporary workflow: generates lockfiles and generated code on a runner with
+# network access and commits them to the branch. Removed before merge.
+name: bootstrap-generated
+
+on:
+  push:
+    branches: [feat/phase2-cloud]
+    paths: [.github/bootstrap-trigger]
+
+permissions:
+  contents: write
+
+jobs:
+  # Downloads the VM base images from their official hosts and prints their
+  # SHA-256, so the seed migration can pin them.
+  image-checksums:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: CirrOS 0.6.2
+        run: |
+          base=https://download.cirros-cloud.net/0.6.2
+          curl -fsSLO "$base/cirros-0.6.2-x86_64-disk.img"
+          echo "computed:"; sha256sum cirros-0.6.2-x86_64-disk.img
+          echo "published:"; curl -fsSL "$base/SHA256SUMS" | grep x86_64-disk || curl -fsSL "$base/MD5SUMS" | grep x86_64-disk
+          stat -c 'size %s bytes' cirros-0.6.2-x86_64-disk.img
+          sudo apt-get install -y -qq qemu-utils >/dev/null && qemu-img info cirros-0.6.2-x86_64-disk.img
+      - name: Ubuntu 24.04 (latest dated release)
+        run: |
+          index=https://cloud-images.ubuntu.com/releases/noble/
+          release=$(curl -fsSL "$index" | grep -o 'release-[0-9]\{8\}' | sort -u | tail -1)
+          echo "release=$release"
+          base="$index$release"
+          curl -fsSL "$base/SHA256SUMS" | grep 'ubuntu-24.04-server-cloudimg-amd64.img$'
+          curl -fsSLO "$base/ubuntu-24.04-server-cloudimg-amd64.img"
+          echo "computed:"; sha256sum ubuntu-24.04-server-cloudimg-amd64.img
+          stat -c 'size %s bytes' ubuntu-24.04-server-cloudimg-amd64.img
+          sudo apt-get install -y -qq qemu-utils >/dev/null && qemu-img info ubuntu-24.04-server-cloudimg-amd64.img
+      - name: KVM availability on this runner
+        run: ls -l /dev/kvm || echo "no /dev/kvm"
+
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: false
+
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+
+      - name: Generate protobuf code
+        run: buf generate
+
+      - name: Resolve Go modules
+        run: |
+          go version
+          go mod tidy
+          cat go.mod
+
+      - name: Resolve Python lockfile
+        if: hashFiles('pyproject.toml') != ''
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          ~/.local/bin/uv lock
+          ~/.local/bin/uv --version
+
+      - uses: actions/setup-node@v6
+        if: hashFiles('web/dashboard/package.json') != ''
+        with:
+          node-version: 22
+
+      - name: Resolve pnpm lockfile and generate API types
+        if: hashFiles('web/dashboard/package.json') != ''
+        working-directory: web/dashboard
+        run: |
+          corepack enable
+          pnpm install --lockfile-only
+          pnpm install --frozen-lockfile
+          pnpm run gen:api
+          pnpm exec prettier --write .
+          pnpm list --depth 0
+
+      - name: Commit generated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git status --short
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "chore: generate lockfiles and generated code"
+            git push
+          fi
+
+      # Best-effort feedback; the real gates are in ci.yml.
+      - name: Python checks
+        if: always() && hashFiles('pyproject.toml') != ''
+        continue-on-error: true
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          uv sync --locked --all-packages
+          uv run ruff check . || true
+          uv run ruff format --check . || true
+          uv run mypy || true
+          uv run pytest || true
+
+      - name: Dashboard checks
+        if: always() && hashFiles('web/dashboard/package.json') != ''
+        continue-on-error: true
+        working-directory: web/dashboard
+        run: |
+          pnpm run lint || true
+          pnpm run typecheck || true
+          pnpm run test || true
+          pnpm run build || true
