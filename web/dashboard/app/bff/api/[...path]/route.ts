@@ -7,7 +7,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { buildUpstreamPath } from "@/lib/api/paths";
 import { isSameOrigin } from "@/lib/auth/redirect";
-import { problemResponse } from "@/lib/bff/respond";
+import { crossOriginRefused, problemResponse } from "@/lib/bff/respond";
 import { getConfig } from "@/lib/config";
 import { errorMessage, log } from "@/lib/log";
 import { getAccessToken, getSession } from "@/lib/session/session";
@@ -27,8 +27,9 @@ async function forward(request: NextRequest, context: RouteContext): Promise<Nex
   const config = getConfig();
   const method = request.method;
 
-  if (!SAFE_METHODS.has(method) && !isSameOrigin(request.headers.get("origin"), config.publicUrl)) {
-    return problemResponse(403, "forbidden", "Permission denied", "Cross-origin requests are not accepted.");
+  const origin = request.headers.get("origin");
+  if (!SAFE_METHODS.has(method) && !isSameOrigin(origin, config.publicUrl)) {
+    return crossOriginRefused(request.nextUrl.pathname, origin);
   }
 
   const session = await getSession();

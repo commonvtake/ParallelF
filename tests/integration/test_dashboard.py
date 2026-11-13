@@ -34,6 +34,9 @@ def test_login_page_renders_with_security_headers(dashboard: httpx.Client) -> No
     assert "Sign in" in response.text
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["x-content-type-options"] == "nosniff"
+    # Not "no-referrer": that makes browsers send `Origin: null` on same-site
+    # form posts, which the CSRF check refuses (sign-out would break).
+    assert response.headers["referrer-policy"] == "same-origin"
     assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
     assert "x-powered-by" not in response.headers
 

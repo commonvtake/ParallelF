@@ -5,7 +5,10 @@ import type { NextConfig } from "next";
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
-  { key: "Referrer-Policy", value: "no-referrer" },
+  // "same-origin": no referrer is ever sent to another site. "no-referrer"
+  // would also make browsers send `Origin: null` on same-site form posts,
+  // which the CSRF origin check (lib/auth/redirect.ts) must then refuse.
+  { key: "Referrer-Policy", value: "same-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
   { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'none'; object-src 'none'" },
 ];

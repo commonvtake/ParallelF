@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { endSessionUrl } from "@/lib/auth/oidc";
 import { isSameOrigin } from "@/lib/auth/redirect";
-import { problemResponse } from "@/lib/bff/respond";
+import { crossOriginRefused } from "@/lib/bff/respond";
 import { getConfig } from "@/lib/config";
 import { errorMessage, log } from "@/lib/log";
 import { sessionCookieName, sessionCookieOptions } from "@/lib/session/cookies";
@@ -15,8 +15,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const config = getConfig();
-  if (!isSameOrigin(request.headers.get("origin"), config.publicUrl)) {
-    return problemResponse(403, "forbidden", "Permission denied", "Cross-origin requests are not accepted.");
+  const origin = request.headers.get("origin");
+  if (!isSameOrigin(origin, config.publicUrl)) {
+    return crossOriginRefused("/auth/logout", origin);
   }
 
   let target = new URL("/login", config.publicUrl);
