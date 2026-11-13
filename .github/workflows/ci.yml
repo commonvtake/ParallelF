@@ -1,0 +1,138 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: "1.27"
+  NODE_VERSION: "22"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  contracts:
+    name: Contracts (OpenAPI, Protobuf)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+
+      - name: Lint and format-check Protobuf
+        run: |
+          buf lint
+          buf format --diff --exit-code
+
+      - name: Check Protobuf backward compatibility against main
+        run: |
+          if git cat-file -e origin/main:buf.yaml 2>/dev/null; then
+            buf breaking --against '.git#ref=origin/main'
+          else
+            echo "main has no Protobuf contracts yet; nothing to compare against."
+          fi
+
+      - name: Check generated Protobuf code is up to date
+        run: |
+          buf generate
+          git diff --exit-code -- gen
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Lint OpenAPI
+        run: npx --yes @redocly/cli@2 lint api/openapi/parallelf.v1.yaml
+
+  go:
+    name: Go (lint, unit and PostgreSQL integration tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: ci-postgres-password
+          POSTGRES_DB: parallelf
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d parallelf"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGPASSWORD: ci-postgres-password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: parallelf
+      PF_CORE_OWNER_DB_PASSWORD: ci-owner-password
+      PF_CORE_DB_PASSWORD: ci-runtime-password
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Verify modules
+        run: |
+          go mod verify
+          go mod tidy -diff
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+
+      - name: Create roles and schemas
+        run: sh deploy/postgres/init/10-roles-and-schemas.sh
+
+      - name: Apply migrations
+        run: |
+          docker run --rm --network host \
+            -v "$PWD/services/core/migrations:/migrations:ro" \
+            migrate/migrate:v4.18.3 \
+            -path /migrations \
+            -database "postgres://pf_core_owner:${PF_CORE_OWNER_DB_PASSWORD}@localhost:5432/parallelf?sslmode=disable&search_path=core" \
+            up
+
+      - name: Test
+        env:
+          PF_TEST_DATABASE_URL: postgres://pf_core:ci-runtime-password@localhost:5432/parallelf?sslmode=disable
+        run: go test -race -count=1 -coverprofile=coverage.out ./...
+
+      - name: Fail if PostgreSQL integration tests were skipped
+        env:
+          PF_TEST_DATABASE_URL: postgres://pf_core:ci-runtime-password@localhost:5432/parallelf?sslmode=disable
+        run: |
+          out=$(go test -count=1 -v ./services/core/internal/store/...)
+          echo "$out" | grep -E "^(=== RUN|--- (PASS|FAIL|SKIP)|ok|FAIL)" || true
+          if echo "$out" | grep -q -- "--- SKIP"; then
+            echo "::error::store integration tests were skipped"
+            exit 1
+          fi
+
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out | tail -n 1
+
+      - name: Vulnerability scan
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
