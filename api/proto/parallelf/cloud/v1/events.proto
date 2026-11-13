@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+// Domain events published by pf-cloudd.
+//
+// Wire format: the message is encoded as protojson and carried with
+// CloudEvents 1.0 attributes (see api/events/README.md). Changes must stay
+// backward compatible within v1; `buf breaking` enforces this in CI.
+package parallelf.cloud.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// NodeRegistered is emitted when a compute node joins, or re-joins and
+// receives a new credential.
+//
+// Subject: pf.cloud.evt.node.registered
+message NodeRegistered {
+  string node_id = 1;
+  string name = 2;
+  bool kvm = 3;
+  bool docker = 4;
+  int32 cpu_count = 5;
+  int64 memory_mib = 6;
+  google.protobuf.Timestamp registered_at = 7;
+}
+
+// NodeStatusChanged is emitted when a node starts or stops reporting.
+//
+// Subject: pf.cloud.evt.node.status_changed
+message NodeStatusChanged {
+  string node_id = 1;
+  string name = 2;
+  // READY or NOT_READY.
+  string from_status = 3;
+  string to_status = 4;
+  google.protobuf.Timestamp changed_at = 5;
+}
+
+// NetworkCreated is emitted after a network is committed.
+//
+// Subject: pf.cloud.evt.network.created
+message NetworkCreated {
+  string network_id = 1;
+  string project_id = 2;
+  string name = 3;
+  // nat, isolated or lab.
+  string kind = 4;
+  string cidr = 5;
+  string created_by = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+// NetworkDeleted is emitted after a network is removed.
+//
+// Subject: pf.cloud.evt.network.deleted
+message NetworkDeleted {
+  string network_id = 1;
+  string project_id = 2;
+  string cidr = 3;
+  string deleted_by = 4;
+  google.protobuf.Timestamp deleted_at = 5;
+}
+
+// WorkloadCreated is emitted when a workload is admitted. It carries the
+// address, so monitoring can attribute traffic to the workload.
+//
+// Subject: pf.cloud.evt.workload.created
+message WorkloadCreated {
+  string workload_id = 1;
+  string project_id = 2;
+  string name = 3;
+  // vm or container.
+  string kind = 4;
+  string template = 5;
+  string flavor = 6;
+  string network_id = 7;
+  string ip = 8;
+  string mac = 9;
+  string created_by = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+// WorkloadStateChanged is emitted on every state transition.
+//
+// Subject: pf.cloud.evt.workload.state_changed
+message WorkloadStateChanged {
+  string workload_id = 1;
+  string project_id = 2;
+  string from_state = 3;
+  string to_state = 4;
+  string node_id = 5;
+  int64 generation = 6;
+  string message = 7;
+  google.protobuf.Timestamp changed_at = 8;
+}
+
+// WorkloadDeleted is emitted once a workload is gone from its host and its
+// address has been released.
+//
+// Subject: pf.cloud.evt.workload.deleted
+message WorkloadDeleted {
+  string workload_id = 1;
+  string project_id = 2;
+  string ip = 3;
+  google.protobuf.Timestamp deleted_at = 4;
+}
