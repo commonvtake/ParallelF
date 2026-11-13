@@ -11,8 +11,10 @@ Format: [MADR](https://adr.github.io/madr/)-style, short. One decision per file.
 | [0005](0005-custom-go-gateway.md) | Custom Go API gateway | Accepted |
 | [0006](0006-level-triggered-reconciliation.md) | Level-triggered reconciliation for agents | Accepted |
 | [0007](0007-own-orchestrator-k3s-for-platform.md) | Own workload orchestrator; k3s only for deploying the platform | Accepted |
-| [0008](0008-identity-service.md) | Own identity service on standard primitives | Accepted |
+| [0008](0008-identity-service.md) | Own identity service on standard primitives | Superseded by ADR-0011 |
 | [0009](0009-postgres-first-telemetry.md) | Postgres-first telemetry; OpenSearch optional | Accepted |
 | [0010](0010-read-only-ai-with-citation-validation.md) | Read-only AI with deterministic citation validation | Accepted |
+| [0011](0011-keycloak-oidc-provider.md) | Keycloak as the OpenID Connect provider | Accepted |
+| [0012](0012-single-go-module-and-make.md) | One Go module and Make for Phase 1 | Accepted |
 
 Template: copy `0000-template.md`, increment the number, keep it under one page.

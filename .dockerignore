@@ -1,0 +1,17 @@
+# Build contexts rooted at the repository (Go and Python images).
+.git
+.github
+docs
+web
+tests
+**/node_modules
+**/.next
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.venv
+.env
+.env.*
+!.env.example
+coverage.out

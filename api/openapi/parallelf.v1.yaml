@@ -1,0 +1,495 @@
+openapi: 3.1.0
+info:
+  title: ParallelF API
+  version: 1.0.0
+  summary: Public HTTP API of the ParallelF platform, served by pf-gateway.
+  description: |
+    Every `/api/v1` route requires an OIDC access token issued by the
+    platform's identity provider, sent as `Authorization: Bearer <token>`.
+    The token must contain the audience `parallelf-api`.
+
+    Errors use RFC 9457 problem details (`application/problem+json`) and
+    always carry the `request_id` that also appears in the `X-Request-ID`
+    response header and in service logs.
+servers:
+  - url: http://localhost:8000
+    description: Local development gateway
+tags:
+  - name: health
+    description: Liveness and readiness probes
+  - name: system
+    description: Platform-wide status
+  - name: core
+    description: Identity context and projects (pf-core)
+  - name: ai
+    description: AI Investigator (pf-aid)
+security:
+  - bearerAuth: []
+
+paths:
+  /healthz:
+    get:
+      operationId: getGatewayLiveness
+      tags: [health]
+      summary: Liveness of the gateway
+      description: Returns 200 while the process is running. Never checks dependencies.
+      security: []
+      responses:
+        "200":
+          description: The gateway is running.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /readyz:
+    get:
+      operationId: getGatewayReadiness
+      tags: [health]
+      summary: Readiness of the gateway
+      security: []
+      responses:
+        "200":
+          description: The gateway can serve traffic.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: A required dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /api/v1/system/status:
+    get:
+      operationId: getSystemStatus
+      tags: [system]
+      summary: Health of every platform component
+      description: |
+        Probes each service's readiness endpoint and the identity provider.
+        The response is 200 even when components are down; read `status`.
+        Requires the `system.status.read` permission.
+      responses:
+        "200":
+          description: Aggregated status report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/core/me:
+    get:
+      operationId: getMe
+      tags: [core]
+      summary: The authenticated caller
+      description: Returns the caller's identity, platform roles and effective permissions.
+      responses:
+        "200":
+          description: The caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/core/projects:
+    get:
+      operationId: listProjects
+      tags: [core]
+      summary: List projects
+      description: Returns projects in creation order. Requires `core.projects.read`.
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of items to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: cursor
+          in: query
+          description: The `next_cursor` value of the previous page.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: One page of projects.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    post:
+      operationId: createProject
+      tags: [core]
+      summary: Create a project
+      description: |
+        Creates a project and records a `parallelf.core.v1.ProjectCreated`
+        event in the same transaction. Requires `core.projects.create`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreate"
+      responses:
+        "201":
+          description: The project was created.
+          headers:
+            Location:
+              description: URL of the new project.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /api/v1/core/projects/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Project id (UUID).
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getProject
+      tags: [core]
+      summary: Get a project
+      description: Requires `core.projects.read`.
+      responses:
+        "200":
+          description: The project.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteProject
+      tags: [core]
+      summary: Delete a project
+      description: |
+        Deletes a project and records a `parallelf.core.v1.ProjectDeleted`
+        event in the same transaction. Requires `core.projects.delete`.
+      responses:
+        "204":
+          description: The project was deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/ai/info:
+    get:
+      operationId: getAIInfo
+      tags: [ai]
+      summary: AI Investigator service information
+      description: |
+        Describes the service and which capabilities exist. Investigation
+        features are not implemented yet and are reported as such.
+      responses:
+        "200":
+          description: Service information.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OIDC access token with audience `parallelf-api`.
+
+  responses:
+    BadRequest:
+      description: The request is malformed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Unauthorized:
+      description: The access token is missing, invalid or expired.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Forbidden:
+      description: The caller's roles do not grant the required permission.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: The resource does not exist.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Conflict:
+      description: The request conflicts with existing state.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ValidationFailed:
+      description: One or more fields are invalid.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, service, version]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        service:
+          type: string
+          examples: [pf-gateway]
+        version:
+          type: string
+        checks:
+          type: object
+          description: Readiness checks by dependency name.
+          additionalProperties:
+            type: string
+            enum: [ok, unavailable]
+
+    SystemStatus:
+      type: object
+      additionalProperties: false
+      required: [status, checked_at, components]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+          description: "`degraded` when at least one component is unavailable."
+        checked_at:
+          type: string
+          format: date-time
+        components:
+          type: array
+          items:
+            $ref: "#/components/schemas/Component"
+
+    Component:
+      type: object
+      additionalProperties: false
+      required: [name, kind, status]
+      properties:
+        name:
+          type: string
+          examples: [core]
+        kind:
+          type: string
+          enum: [service, dependency, identity-provider]
+        status:
+          type: string
+          enum: [ok, unavailable]
+        latency_ms:
+          type: number
+          minimum: 0
+        version:
+          type: string
+        reported_by:
+          type: string
+          description: The service whose readiness check reported this dependency.
+
+    Me:
+      type: object
+      additionalProperties: false
+      required: [subject, username, roles, permissions]
+      properties:
+        subject:
+          type: string
+          description: Stable OIDC subject identifier.
+        username:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        permissions:
+          type: array
+          items:
+            type: string
+            pattern: "^[a-z]+\\.[a-z]+\\.[a-z]+$"
+
+    Role:
+      type: string
+      enum: [owner, admin, operator, analyst, lab-researcher, viewer]
+
+    Project:
+      type: object
+      additionalProperties: false
+      required: [id, slug, name, description, created_by, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          $ref: "#/components/schemas/ProjectSlug"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        created_by:
+          type: string
+          description: OIDC subject of the creator.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProjectSlug:
+      type: string
+      pattern: "^[a-z][a-z0-9-]{1,38}[a-z0-9]$"
+      description: 3-40 characters; lower-case letters, digits and hyphens.
+      examples: [demo-lab]
+
+    ProjectCreate:
+      type: object
+      additionalProperties: false
+      required: [slug, name]
+      properties:
+        slug:
+          $ref: "#/components/schemas/ProjectSlug"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          default: ""
+
+    ProjectPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        next_cursor:
+          type: string
+          description: Present when more items exist. Pass it as `cursor`.
+
+    AIInfo:
+      type: object
+      additionalProperties: false
+      required: [service, version, capabilities]
+      properties:
+        service:
+          type: string
+          examples: [pf-aid]
+        version:
+          type: string
+        capabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/Capability"
+
+    Capability:
+      type: object
+      additionalProperties: false
+      required: [name, status, description]
+      properties:
+        name:
+          type: string
+          examples: [investigations]
+        status:
+          type: string
+          enum: [available, not_implemented]
+        description:
+          type: string
+
+    Problem:
+      type: object
+      description: RFC 9457 problem details.
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          examples: ["https://parallelf.dev/problems/validation"]
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+        request_id:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+
+    FieldError:
+      type: object
+      additionalProperties: false
+      required: [field, code]
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+        message:
+          type: string

@@ -1,0 +1,7 @@
+extends:
+  - recommended
+rules:
+  # The repository has not chosen a licence yet.
+  info-license: off
+  operation-operationId: error
+  no-unused-components: error

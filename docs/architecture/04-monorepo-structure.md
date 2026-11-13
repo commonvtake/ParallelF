@@ -1,5 +1,7 @@
 # 04 — Monorepo Directory Structure
 
+> **Phase 1 differs in three places** ([ADR-0012](../adr/0012-single-go-module-and-make.md)): one Go module at the root instead of `go.work`, a `Makefile` instead of `Taskfile.yml`, and a single OpenAPI file `api/openapi/parallelf.v1.yaml`. The layout below remains the target as the repository grows.
+
 ## 1. Layout
 
 ```text

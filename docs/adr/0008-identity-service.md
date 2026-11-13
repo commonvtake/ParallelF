@@ -1,6 +1,6 @@
 # ADR-0008: Own identity service on standard primitives
 
-- Status: Accepted
+- Status: Superseded by [ADR-0011](0011-keycloak-oidc-provider.md)
 - Date: 2026-11-10
 
 ## Context

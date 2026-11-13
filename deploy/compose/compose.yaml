@@ -1,0 +1,225 @@
+# ParallelF local development stack.
+#
+# Start it through the Makefile (`make up`), which passes the repository's
+# .env file. Every published port is bound to 127.0.0.1 only.
+#
+#   dashboard  http://localhost:3000   web interface
+#   gateway    http://localhost:8000   API entry point
+#   keycloak   http://localhost:8080   OpenID Connect provider
+#   postgres   localhost:5432          database (PF_POSTGRES_HOST_PORT)
+
+name: parallelf
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-oidc-env: &oidc-env
+  # "iss" claim: the URL browsers use to reach the provider.
+  PF_OIDC_ISSUER: http://localhost:8080/realms/parallelf
+  # Signing keys are fetched over the container network.
+  PF_OIDC_JWKS_URL: http://keycloak:8080/realms/parallelf/protocol/openid-connect/certs
+  PF_OIDC_AUDIENCE: parallelf-api
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: parallelf
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run "make init" to create .env}
+      PF_CORE_OWNER_DB_PASSWORD: ${PF_CORE_OWNER_DB_PASSWORD:?}
+      PF_CORE_DB_PASSWORD: ${PF_CORE_DB_PASSWORD:?}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:${PF_POSTGRES_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d parallelf"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *logging
+
+  # Applies pf-core's schema migrations with the schema-owner role, then exits.
+  migrate-core:
+    image: migrate/migrate:v4.18.3
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/core/migrations:/migrations:ro
+    command:
+      - -path
+      - /migrations
+      - -database
+      - postgres://pf_core_owner:${PF_CORE_OWNER_DB_PASSWORD:?}@postgres:5432/parallelf?sslmode=disable&search_path=core
+      - up
+    logging: *logging
+
+  # OpenID Connect provider. Development mode: plain HTTP and an embedded
+  # database. The realm is re-imported from deploy/keycloak/realm on every
+  # fresh container, so the file in the repository is the source of truth.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?}
+      # Fixed browser-facing URL, so tokens always carry the same issuer;
+      # services may still call the provider by its container name.
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      JAVA_OPTS_KC_HEAP: "-Xms128m -Xmx512m"
+      # Substituted into the realm file at import.
+      PF_OIDC_CLIENT_SECRET: ${PF_OIDC_CLIENT_SECRET:?}
+      PF_DEV_OWNER_PASSWORD: ${PF_DEV_OWNER_PASSWORD:?}
+      PF_DEV_VIEWER_PASSWORD: ${PF_DEV_VIEWER_PASSWORD:?}
+    volumes:
+      - ../keycloak/realm:/opt/keycloak/data/import:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      # The image has no curl; ask the management port with bash's /dev/tcp.
+      test:
+        - CMD
+        - bash
+        - -c
+        - |
+          exec 3<>/dev/tcp/127.0.0.1/9000 || exit 1
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3
+          read -r status <&3
+          case "$$status" in *" 200 "*) exit 0 ;; *) exit 1 ;; esac
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+    logging: *logging
+
+  core:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/go-service.Dockerfile
+      args:
+        SERVICE: core
+        VERSION: ${PF_VERSION:-dev}
+    restart: unless-stopped
+    depends_on:
+      migrate-core:
+        condition: service_completed_successfully
+    environment:
+      <<: *oidc-env
+      PF_HTTP_ADDR: ":9001"
+      PF_LOG_LEVEL: ${PF_LOG_LEVEL:-info}
+      PF_DATABASE_URL: postgres://pf_core:${PF_CORE_DB_PASSWORD:?}@postgres:5432/parallelf?sslmode=disable
+    healthcheck:
+      test: ["CMD", "/service", "-healthcheck", "http://127.0.0.1:9001/readyz"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
+  ai:
+    build:
+      context: ../..
+      dockerfile: services/ai/Dockerfile
+      args:
+        VERSION: ${PF_VERSION:-dev}
+    restart: unless-stopped
+    environment:
+      <<: *oidc-env
+      PF_HTTP_PORT: "9006"
+      PF_LOG_LEVEL: ${PF_LOG_LEVEL:-info}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:9006/readyz', timeout=3).status == 200 else 1)"
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
+  gateway:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/go-service.Dockerfile
+      args:
+        SERVICE: gateway
+        VERSION: ${PF_VERSION:-dev}
+    restart: unless-stopped
+    depends_on:
+      core:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    environment:
+      <<: *oidc-env
+      PF_HTTP_ADDR: ":8000"
+      PF_LOG_LEVEL: ${PF_LOG_LEVEL:-info}
+      PF_UPSTREAM_CORE_URL: http://core:9001
+      PF_UPSTREAM_AI_URL: http://ai:9006
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "/service", "-healthcheck", "http://127.0.0.1:8000/readyz"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
+  dashboard:
+    build:
+      context: ../../web/dashboard
+      args:
+        VERSION: ${PF_VERSION:-dev}
+    restart: unless-stopped
+    depends_on:
+      gateway:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      PF_PUBLIC_URL: http://localhost:3000
+      PF_GATEWAY_URL: http://gateway:8000
+      PF_OIDC_ISSUER: http://localhost:8080/realms/parallelf
+      PF_OIDC_DISCOVERY_URL: http://keycloak:8080/realms/parallelf/.well-known/openid-configuration
+      PF_OIDC_CLIENT_ID: parallelf-dashboard
+      PF_OIDC_CLIENT_SECRET: ${PF_OIDC_CLIENT_SECRET:?}
+      # Plain HTTP on localhost; set to "true" wherever the dashboard is served over HTTPS.
+      PF_COOKIE_SECURE: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/healthz').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
+volumes:
+  postgres-data:

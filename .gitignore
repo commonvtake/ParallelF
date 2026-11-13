@@ -1,0 +1,39 @@
+# Environment and secrets (never commit real values)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Go
+/bin/
+*.test
+coverage.out
+coverage.html
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+web/dashboard/test-results/
+web/dashboard/playwright-report/
+web/dashboard/coverage/
+
+# Editors and OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

@@ -2,6 +2,8 @@
 
 ParallelF is a unified, self-hosted platform for **cloud computing**, **private networking**, and **defensive security**, designed to run on one 16 GB workstation and deploy to k3s or AWS on demand.
 
+> The repository is at Phase 1 (the foundation). For what exists today and how to run it, see the [developer guide](../dev-setup.md). These documents describe the target design.
+
 ## Reading order
 
 | # | Document | Answers |
