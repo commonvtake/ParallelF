@@ -1,0 +1,56 @@
+# Root of the Python workspace (uv). It installs nothing itself; it pins the
+# toolchain and development dependencies shared by every Python package.
+[project]
+name = "parallelf-workspace"
+version = "0.1.0"
+description = "ParallelF Python workspace: shared library, FastAPI services and integration tests"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "jsonschema>=4.23",
+    "mypy==2.3.1",
+    "psycopg[binary]>=3.2",
+    "pytest>=8.3",
+    "pyyaml>=6.0.2",
+    "ruff==0.16.9",
+    "types-jsonschema>=4.23",
+    "types-pyyaml>=6.0.12",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["python/pf_common", "services/ai"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["python/pf_common/src", "services/ai/src"]
+extend-exclude = ["docs", "gen", "web"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RUF", "S", "T20"]
+ignore = [
+    "S104", # binding to 0.0.0.0 is intended inside containers
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106"] # asserts and dummy credentials in tests
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+mypy_path = ["python/pf_common/src", "services/ai/src"]
+explicit_package_bases = true
+files = ["python/pf_common/src", "services/ai/src", "tests/integration"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --import-mode=importlib --strict-markers"
+# Unit tests only. tests/integration needs the running stack and is run
+# explicitly: `make test-integration`.
+testpaths = ["python/pf_common/tests", "services/ai/tests"]
