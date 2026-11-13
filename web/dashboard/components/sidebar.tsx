@@ -15,7 +15,10 @@ export function Sidebar() {
         <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
         <span className="text-base font-semibold tracking-tight text-white">ParallelF</span>
       </div>
-      <nav aria-label="Sections" className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:overflow-visible">
+      <nav
+        aria-label="Sections"
+        className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:overflow-visible"
+      >
         {SECTIONS.map((section) => {
           const active = isActive(section.href, pathname);
           return (
@@ -24,7 +27,9 @@ export function Sidebar() {
               href={section.href}
               aria-current={active ? "page" : undefined}
               className={`flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm whitespace-nowrap transition-colors ${
-                active ? "bg-slate-700 font-medium text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                active
+                  ? "bg-slate-700 font-medium text-white"
+                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
               }`}
             >
               <span>{section.label}</span>

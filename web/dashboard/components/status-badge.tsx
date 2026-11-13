@@ -10,7 +10,9 @@ export type BadgeTone = keyof typeof STYLES;
 /** A small labelled pill. The label carries the meaning; colour only supports it. */
 export function StatusBadge({ tone, children }: { tone: BadgeTone; children: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${STYLES[tone]}`}>
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${STYLES[tone]}`}
+    >
       {children}
     </span>
   );

@@ -45,7 +45,9 @@ describe("ensureAccessToken", () => {
 
   it("shares one refresh between concurrent callers", async () => {
     const { store, session, now } = setup({ refreshToken: "refresh-1", expiresInMs: 0 });
-    const refresh = vi.fn().mockResolvedValue({ accessToken: "access-2", accessTokenExpiresAt: now() + 300_000 });
+    const refresh = vi
+      .fn()
+      .mockResolvedValue({ accessToken: "access-2", accessTokenExpiresAt: now() + 300_000 });
 
     const results = await Promise.all([
       ensureAccessToken(session, store, refresh, now),

@@ -35,7 +35,9 @@ async function loadConfiguration(): Promise<client.Configuration> {
   }
   const metadata = (await response.json()) as client.ServerMetadata;
   if (metadata.issuer !== oidc.issuer) {
-    throw new Error(`identity provider issuer mismatch: expected ${oidc.issuer}, got ${String(metadata.issuer)}`);
+    throw new Error(
+      `identity provider issuer mismatch: expected ${oidc.issuer}, got ${String(metadata.issuer)}`,
+    );
   }
 
   const configuration = new client.Configuration(metadata, oidc.clientId, oidc.clientSecret);
@@ -71,7 +73,9 @@ function toTokenSet(tokens: client.TokenEndpointResponse & client.TokenEndpointR
 }
 
 /** Creates the PKCE verifier, state and nonce and the provider login URL. */
-export async function beginLogin(returnTo: string): Promise<{ url: URL; pending: Omit<PendingLogin, "expiresAt"> }> {
+export async function beginLogin(
+  returnTo: string,
+): Promise<{ url: URL; pending: Omit<PendingLogin, "expiresAt"> }> {
   const configuration = await getConfiguration();
 
   const codeVerifier = client.randomPKCECodeVerifier();

@@ -4,7 +4,12 @@ import { describeProblem, parseProblem } from "./problem";
 
 describe("parseProblem", () => {
   it("returns a well-formed problem unchanged", () => {
-    const body = { type: "https://parallelf.dev/problems/conflict", title: "Conflict", status: 409, detail: "Taken." };
+    const body = {
+      type: "https://parallelf.dev/problems/conflict",
+      title: "Conflict",
+      status: 409,
+      detail: "Taken.",
+    };
 
     expect(parseProblem(409, body)).toEqual(body);
   });

@@ -28,8 +28,8 @@ export function NotImplemented({ title, summary, planned, designDoc, milestones 
         <div className="rounded-lg border border-dashed border-slate-300 bg-white p-5">
           <p className="text-sm font-medium text-slate-900">This section is not implemented yet.</p>
           <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            Nothing here is connected to a backend, and no data is shown because none exists. It is planned for
-            roadmap milestone {milestones}.
+            Nothing here is connected to a backend, and no data is shown because none exists. It is planned
+            for roadmap milestone {milestones}.
           </p>
         </div>
         <Card title="Planned capabilities">

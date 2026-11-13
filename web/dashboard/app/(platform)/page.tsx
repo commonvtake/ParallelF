@@ -44,7 +44,10 @@ function ComponentsTable({ report }: { report: SystemStatus }) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {report.components.map((component) => (
-            <tr key={`${component.reported_by ?? ""}/${component.name}`} data-testid={`component-${component.name}`}>
+            <tr
+              key={`${component.reported_by ?? ""}/${component.name}`}
+              data-testid={`component-${component.name}`}
+            >
               <th scope="row" className="py-2 pr-4 font-medium text-slate-900">
                 {component.name}
                 {component.reported_by ? (
@@ -85,7 +88,9 @@ export default async function OverviewPage() {
                 <StatusBadge tone={status.data.status === "ok" ? "ok" : "warn"}>
                   {status.data.status === "ok" ? "All components operational" : "Degraded"}
                 </StatusBadge>
-                <span className="text-xs text-slate-500">Checked {formatTimestamp(status.data.checked_at)}</span>
+                <span className="text-xs text-slate-500">
+                  Checked {formatTimestamp(status.data.checked_at)}
+                </span>
               </div>
               <ComponentsTable report={status.data} />
             </>

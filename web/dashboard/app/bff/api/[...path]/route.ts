@@ -44,7 +44,12 @@ async function forward(request: NextRequest, context: RouteContext): Promise<Nex
 
   const token = await getAccessToken(session);
   if (!token) {
-    return problemResponse(401, "unauthorized", "Authentication required", "Your session has ended. Sign in again.");
+    return problemResponse(
+      401,
+      "unauthorized",
+      "Authentication required",
+      "Your session has ended. Sign in again.",
+    );
   }
 
   const headers = new Headers({ authorization: `Bearer ${token}`, accept: "application/json" });
@@ -79,7 +84,10 @@ async function forward(request: NextRequest, context: RouteContext): Promise<Nex
     if (value) responseHeaders.set(name, value);
   }
   const hasBody = upstream.status !== 204 && upstream.status !== 304 && method !== "HEAD";
-  return new NextResponse(hasBody ? upstream.body : null, { status: upstream.status, headers: responseHeaders });
+  return new NextResponse(hasBody ? upstream.body : null, {
+    status: upstream.status,
+    headers: responseHeaders,
+  });
 }
 
 export { forward as DELETE, forward as GET, forward as POST };

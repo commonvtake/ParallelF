@@ -1,6 +1,14 @@
 import type { ReactNode } from "react";
 
-export function PageHeader({ title, summary, children }: { title: string; summary: string; children?: ReactNode }) {
+export function PageHeader({
+  title,
+  summary,
+  children,
+}: {
+  title: string;
+  summary: string;
+  children?: ReactNode;
+}) {
   return (
     <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>

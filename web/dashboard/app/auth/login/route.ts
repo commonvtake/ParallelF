@@ -22,7 +22,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const response = NextResponse.redirect(url, 303);
     // Ties the login to this browser: the callback only accepts a `state`
     // that matches this cookie.
-    response.cookies.set(loginCookieName(config.cookieSecure), pending.state, loginCookieOptions(config.cookieSecure));
+    response.cookies.set(
+      loginCookieName(config.cookieSecure),
+      pending.state,
+      loginCookieOptions(config.cookieSecure),
+    );
     response.headers.set("cache-control", "no-store");
     return response;
   } catch (error) {

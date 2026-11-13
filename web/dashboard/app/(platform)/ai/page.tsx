@@ -20,7 +20,10 @@ export default async function AIPage() {
         <StatusBadge tone="neutral">Not implemented yet</StatusBadge>
       </PageHeader>
       <div className="space-y-4">
-        <div data-testid="not-implemented" className="rounded-lg border border-dashed border-slate-300 bg-white p-5">
+        <div
+          data-testid="not-implemented"
+          className="rounded-lg border border-dashed border-slate-300 bg-white p-5"
+        >
           <p className="text-sm font-medium text-slate-900">Investigations are not implemented yet.</p>
           <p className="mt-1 max-w-2xl text-sm text-slate-600">
             The AI service is running and answers authenticated requests, but it cannot investigate anything

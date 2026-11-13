@@ -63,7 +63,12 @@ export class MemorySessionStore {
       if (oldest !== undefined) this.sessions.delete(oldest);
     }
     const createdAt = this.now();
-    const session: Session = { ...data, id: randomToken(), createdAt, expiresAt: createdAt + ttlSeconds * 1000 };
+    const session: Session = {
+      ...data,
+      id: randomToken(),
+      createdAt,
+      expiresAt: createdAt + ttlSeconds * 1000,
+    };
     this.sessions.set(session.id, session);
     return session;
   }
@@ -81,7 +86,8 @@ export class MemorySessionStore {
 
   updateTokens(
     id: string,
-    tokens: Pick<Session, "accessToken" | "accessTokenExpiresAt"> & Partial<Pick<Session, "refreshToken" | "idToken">>,
+    tokens: Pick<Session, "accessToken" | "accessTokenExpiresAt"> &
+      Partial<Pick<Session, "refreshToken" | "idToken">>,
   ): Session | undefined {
     const session = this.getSession(id);
     if (!session) return undefined;

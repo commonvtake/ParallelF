@@ -91,8 +91,8 @@ export default async function SettingsPage() {
             <Field label="Expires" value={formatTimestamp(new Date(session.expiresAt).toISOString())} />
           </dl>
           <p className="mt-3 text-sm text-slate-600">
-            The browser holds only a random session identifier in an HttpOnly cookie. Access tokens stay on the
-            dashboard server.
+            The browser holds only a random session identifier in an HttpOnly cookie. Access tokens stay on
+            the dashboard server.
           </p>
         </Card>
       </div>

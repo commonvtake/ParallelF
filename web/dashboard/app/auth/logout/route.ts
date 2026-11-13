@@ -35,7 +35,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const response = NextResponse.redirect(target, 303);
-  response.cookies.set(sessionCookieName(config.cookieSecure), "", sessionCookieOptions(config.cookieSecure, 0));
+  response.cookies.set(
+    sessionCookieName(config.cookieSecure),
+    "",
+    sessionCookieOptions(config.cookieSecure, 0),
+  );
   response.headers.set("cache-control", "no-store");
   return response;
 }
