@@ -18,6 +18,8 @@ flowchart LR
 
 ### 1.1 `pf-core` (Go)
 
+> **Changed by [ADR-0011](../../adr/0011-keycloak-oidc-provider.md):** identity is provided by Keycloak. The `identity`, `mfa` and `tokens` modules and the token model below describe the earlier design and are not being built. Projects, RBAC and audit remain in `pf-core`.
+
 Modules:
 
 | Module | Responsibility |

@@ -11,7 +11,7 @@ FROM python:${PYTHON_VERSION}-slim AS build
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never
-RUN pip install --no-cache-dir uv==0.11.32
+RUN pip install --no-cache-dir uv==0.13.8
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
