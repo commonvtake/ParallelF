@@ -6,9 +6,9 @@ ParallelF is a self-hosted platform that will combine a miniature cloud, a WireG
 
 [![ci](https://github.com/commonvtake/ParallelF/actions/workflows/ci.yml/badge.svg)](https://github.com/commonvtake/ParallelF/actions/workflows/ci.yml)
 
-## Status: Phase 1, the foundation
+## Status: Phase 2, ParallelF Cloud
 
-The platform foundation is in place. The product subsystems are not built yet, and the dashboard says so on each of their pages.
+The platform foundation and the first subsystem, ParallelF Cloud, are in place. The remaining subsystems are not built yet, and the dashboard says so on each of their pages.
 
 | Area | State |
 |---|---|
@@ -16,9 +16,10 @@ The platform foundation is in place. The product subsystems are not built yet, a
 | API gateway: token verification, routing, aggregated platform status | Working |
 | `pf-core` (Go): caller profile, projects, transactional event outbox on PostgreSQL | Working |
 | `pf-aid` (Python/FastAPI): service foundation with an authenticated capability listing | Working (no AI features) |
-| Dashboard: Overview (live status) and Settings (profile, roles, projects, session) | Working |
-| Dashboard: Cloud, VPN, Network Monitoring, Security Lab, AI Investigator | Not implemented; labelled as such |
-| Event bus (NATS JetStream), MFA policy, audit log, observability stack | Not implemented; see the [roadmap](docs/architecture/10-roadmap-and-acceptance-criteria.md) |
+| ParallelF Cloud: KVM VMs and Docker containers on a registered host, scheduling, quotas, NAT/isolated/lab networks, metrics, audit log ([guide](docs/cloud.md)) | Working on one host |
+| Dashboard: Overview (live status), Cloud, and Settings (profile, roles, projects, session) | Working |
+| Dashboard: VPN, Network Monitoring, Security Lab, AI Investigator | Not implemented; labelled as such |
+| Event bus (NATS JetStream), MFA policy, platform-wide audit log, observability stack | Not implemented; see the [roadmap](docs/architecture/10-roadmap-and-acceptance-criteria.md) |
 
 ## What runs locally
 
@@ -29,8 +30,12 @@ flowchart LR
     D -->|"Bearer access token"| G["pf-gateway<br/>Go, :8000"]
     D -->|"code exchange, refresh"| K
     G --> C["pf-core<br/>Go"]
+    G --> CL["pf-cloudd<br/>Go"]
     G --> A["pf-aid<br/>Python / FastAPI"]
-    C --> P[("PostgreSQL<br/>schema core")]
+    C --> P[("PostgreSQL<br/>schemas core, cloud")]
+    CL --> P
+    N["pf-node-agent<br/>on the compute host"] -->|"desired-state sync"| CL
+    N --> V["libvirt / KVM, Docker"]
     G -. "signing keys (JWKS)" .-> K
     C -. "signing keys (JWKS)" .-> K
     A -. "signing keys (JWKS)" .-> K
@@ -49,6 +54,14 @@ make up        # creates .env with generated secrets, builds, starts, waits unti
 make verify    # smoke test: identity provider -> gateway -> services -> database
 ```
 
+To run workloads, turn this machine into a compute host (Linux with KVM; see the [Cloud guide](docs/cloud.md)):
+
+```sh
+make cloud-host-setup   # KVM, libvirt, QEMU (sudo, once)
+make agent-install      # the node agent under systemd (sudo)
+make verify-cloud       # one VM: create, run, ping, stop, start, delete
+```
+
 Then open <http://localhost:3000> and sign in as `owner` (full access) or `viewer` (read-only). Their generated passwords are `PF_DEV_OWNER_PASSWORD` and `PF_DEV_VIEWER_PASSWORD` in `.env`.
 
 | URL | What |
@@ -59,7 +72,7 @@ Then open <http://localhost:3000> and sign in as `owner` (full access) or `viewe
 
 `make down` stops the stack and keeps its data; `make clean` also deletes the data. `make help` lists every task.
 
-The first `make up` downloads base images and builds four images, which takes several minutes. All ports are published on `127.0.0.1` only.
+The first `make up` downloads base images and builds five images, which takes several minutes. All ports are published on `127.0.0.1` only.
 
 ## Repository layout
 
@@ -69,11 +82,13 @@ The first `make up` downloads base images and builds four images, which takes se
 | `api/proto/`, `api/events/` | Versioned event schemas (Protobuf) and the event envelope |
 | `pkg/` | Shared Go packages: configuration, logging, HTTP building blocks, authentication, authorization, IDs |
 | `services/core/` | `pf-core` (Go) and its SQL migrations |
+| `services/cloud/` | `pf-cloudd` (Go): cloud API, scheduler, store and migrations |
+| `services/node-agent/` | `pf-node-agent` (Go, standard library only): runs on compute hosts, drives libvirt and Docker |
 | `services/gateway/` | `pf-gateway` (Go) |
 | `services/ai/` | `pf-aid` (Python, FastAPI) |
 | `python/pf_common/` | Shared Python package: settings, logging, authentication, FastAPI application factory |
 | `web/dashboard/` | Dashboard (Next.js, React, TypeScript) and its Playwright tests |
-| `deploy/` | Compose stack, Dockerfile for Go services, PostgreSQL roles, Keycloak realm |
+| `deploy/` | Compose stack, Dockerfile for Go services, PostgreSQL roles, Keycloak realm, the agent's systemd unit |
 | `tests/integration/` | API tests that run against the live stack |
 | `scripts/dev/` | Environment generation, readiness wait, token and smoke-test scripts |
 | `docs/` | [Developer guide](docs/dev-setup.md), [architecture](docs/architecture/README.md), [decision records](docs/adr/README.md) |

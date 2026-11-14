@@ -1,0 +1,32 @@
+# ParallelF node agent: converges this host to the workloads pf-cloudd
+# assigns to it (KVM VMs through libvirt, containers through Docker).
+#
+# Installed by `make agent-install`. Settings live in
+# /etc/parallelf/node-agent.env (see scripts/dev/agent-install.sh).
+[Unit]
+Description=ParallelF node agent
+Documentation=https://github.com/commonvtake/ParallelF/blob/main/docs/cloud.md
+Wants=network-online.target
+After=network-online.target libvirtd.service docker.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/parallelf/node-agent.env
+ExecStart=/usr/local/bin/pf-node-agent
+Restart=always
+RestartSec=5
+# Stopping the agent never stops workloads: VMs and containers keep running
+# and the agent re-adopts them when it starts again.
+KillMode=process
+TimeoutStopSec=30
+
+# The agent manages libvirt, Docker, bridges and files under its data
+# directory; it needs root but nothing else from the system.
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=full
+ReadWritePaths=/var/lib/parallelf
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

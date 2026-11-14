@@ -46,7 +46,7 @@ function ComponentsTable({ report }: { report: SystemStatus }) {
           {report.components.map((component) => (
             <tr
               key={`${component.reported_by ?? ""}/${component.name}`}
-              data-testid={`component-${component.name}`}
+              data-testid={`component-${component.reported_by ? `${component.reported_by}-` : ""}${component.name}`}
             >
               <th scope="row" className="py-2 pr-4 font-medium text-slate-900">
                 {component.name}

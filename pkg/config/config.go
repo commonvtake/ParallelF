@@ -49,6 +49,11 @@ func (l *Loader) fail(key, format string, args ...any) {
 	l.errs = append(l.errs, fmt.Errorf("%s: %s", key, fmt.Sprintf(format, args...)))
 }
 
+// Invalid records a problem with key found by the caller's own validation.
+func (l *Loader) Invalid(key, format string, args ...any) {
+	l.fail(key, format, args...)
+}
+
 // String returns the value of key, or def when it is unset or empty.
 func (l *Loader) String(key, def string) string {
 	if v, ok := l.get(key); ok {

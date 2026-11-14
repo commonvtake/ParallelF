@@ -91,4 +91,4 @@ async function forward(request: NextRequest, context: RouteContext): Promise<Nex
   });
 }
 
-export { forward as DELETE, forward as GET, forward as POST };
+export { forward as DELETE, forward as GET, forward as POST, forward as PUT };

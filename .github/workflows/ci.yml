@@ -82,6 +82,8 @@ jobs:
       POSTGRES_DB: parallelf
       PF_CORE_OWNER_DB_PASSWORD: ci-owner-password
       PF_CORE_DB_PASSWORD: ci-runtime-password
+      PF_CLOUD_OWNER_DB_PASSWORD: ci-cloud-owner-password
+      PF_CLOUD_DB_PASSWORD: ci-cloud-runtime-password
     steps:
       - uses: actions/checkout@v6
 
@@ -109,28 +111,43 @@ jobs:
 
       - name: Apply migrations
         run: |
-          docker run --rm --network host \
-            -v "$PWD/services/core/migrations:/migrations:ro" \
-            migrate/migrate:v4.18.3 \
-            -path /migrations \
-            -database "postgres://pf_core_owner:${PF_CORE_OWNER_DB_PASSWORD}@localhost:5432/parallelf?sslmode=disable&search_path=core" \
-            up
+          for svc in core cloud; do
+            owner_pw_var="PF_$(echo $svc | tr a-z A-Z)_OWNER_DB_PASSWORD"
+            docker run --rm --network host \
+              -v "$PWD/services/$svc/migrations:/migrations:ro" \
+              migrate/migrate:v4.18.3 \
+              -path /migrations \
+              -database "postgres://pf_${svc}_owner:$(printenv $owner_pw_var)@localhost:5432/parallelf?sslmode=disable&search_path=${svc}" \
+              up
+          done
 
       - name: Test
         env:
           PF_TEST_DATABASE_URL: postgres://pf_core:ci-runtime-password@localhost:5432/parallelf?sslmode=disable
-        run: go test -race -count=1 -coverprofile=coverage.out ./...
+          PF_TEST_CLOUD_DATABASE_URL: postgres://pf_cloud:ci-cloud-runtime-password@localhost:5432/parallelf?sslmode=disable
+          PF_TEST_ADMIN_DATABASE_URL: postgres://postgres:ci-postgres-password@localhost:5432/parallelf?sslmode=disable
+        run: |
+          status=0
+          go test -race -count=1 -coverprofile=coverage.out -v ./... > go-test.log 2>&1 || status=$?
+          grep -E "^(--- FAIL|FAIL|ok|panic)|_test.go:[0-9]+:" go-test.log || true
+          exit $status
 
       - name: Fail if PostgreSQL integration tests were skipped
-        env:
-          PF_TEST_DATABASE_URL: postgres://pf_core:ci-runtime-password@localhost:5432/parallelf?sslmode=disable
         run: |
-          out=$(go test -count=1 -v ./services/core/internal/store/...)
-          echo "$out" | grep -E "^(=== RUN|--- (PASS|FAIL|SKIP)|ok|FAIL)" || true
-          if echo "$out" | grep -q -- "--- SKIP"; then
+          if grep -qE -- "--- SKIP|skipping the tamper" go-test.log; then
+            grep -E -- "--- SKIP|skipping" go-test.log
             echo "::error::store integration tests were skipped"
             exit 1
           fi
+
+      # The store tests share one database with every earlier run, as on a
+      # developer's machine: running them again must still pass.
+      - name: Store tests are repeatable
+        env:
+          PF_TEST_DATABASE_URL: postgres://pf_core:ci-runtime-password@localhost:5432/parallelf?sslmode=disable
+          PF_TEST_CLOUD_DATABASE_URL: postgres://pf_cloud:ci-cloud-runtime-password@localhost:5432/parallelf?sslmode=disable
+          PF_TEST_ADMIN_DATABASE_URL: postgres://postgres:ci-postgres-password@localhost:5432/parallelf?sslmode=disable
+        run: go test -count=1 ./services/core/internal/store/... ./services/cloud/internal/store/...
 
       - name: Coverage summary
         run: go tool cover -func=coverage.out | tail -n 1
@@ -208,9 +225,9 @@ jobs:
         run: pnpm run build
 
   stack:
-    name: Stack (Compose launch, integration and end-to-end tests)
+    name: Stack (Compose, compute host with KVM, integration and end-to-end tests)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
 
@@ -226,6 +243,23 @@ jobs:
       - name: Smoke test
         run: make verify
 
+      # The runner becomes a ParallelF compute host: hosted runners expose
+      # /dev/kvm, so real VMs boot under nested virtualisation.
+      - name: Prepare the compute host (KVM, libvirt, QEMU)
+        run: make cloud-host-setup
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install the node agent as a systemd service
+        run: |
+          make agent-install
+          make agent-check
+
+      - name: One host, one VM (make verify-cloud)
+        run: make verify-cloud
+
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -236,7 +270,12 @@ jobs:
           uv sync --locked --all-packages
 
       - name: Integration tests
-        run: make test-integration
+        env:
+          PF_REQUIRE_CLOUD_NODE: "1"
+          PF_CLOUD_DISRUPTIVE_TESTS: "1"
+        run: |
+          export PF_TEST_ADMIN_DATABASE_URL="postgres://postgres:$(grep ^POSTGRES_PASSWORD= .env | cut -d= -f2)@localhost:5432/parallelf"
+          make test-integration
 
       - uses: actions/setup-node@v6
         with:
@@ -250,7 +289,24 @@ jobs:
           pnpm exec playwright install --with-deps chromium
 
       - name: End-to-end tests
+        env:
+          PF_REQUIRE_CLOUD_NODE: "1"
         run: make test-e2e
+
+      - name: Compute host state
+        if: always()
+        run: |
+          sudo virsh -c qemu:///system list --all || true
+          sudo virsh -c qemu:///system net-list --all || true
+          docker ps -a --filter label=io.parallelf.managed=true || true
+          sudo ls -la /var/lib/parallelf/cloud /var/lib/parallelf/cloud/instances 2>/dev/null || true
+          for f in /var/lib/parallelf/cloud/instances/*/console.log; do
+            [ -f "$f" ] && { echo "== $f"; sudo tail -c 2000 "$f"; } || true
+          done
+
+      - name: Node agent log
+        if: always()
+        run: sudo journalctl -u pf-node-agent --no-pager -n 400 || true
 
       - name: Service logs
         if: always()

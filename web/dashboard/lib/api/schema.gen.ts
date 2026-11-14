@@ -157,6 +157,409 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/cloud/nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List compute nodes
+         * @description Nodes with their capacity, what is reserved on them, and health. Requires `cloud.resources.read`.
+         */
+        get: operations["listNodes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/nodes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** Get a compute node */
+        get: operations["getNode"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove a node that stopped reporting
+         * @description Only a NOT_READY node without live workloads can be removed.
+         *     Requires `cloud.nodes.manage` and `confirm` equal to the node's name.
+         */
+        delete: operations["deleteNode"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/nodes/{id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** Host utilisation samples */
+        get: operations["getNodeMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/nodes/{id}/cordon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop placing new workloads on a node
+         * @description Requires `cloud.nodes.manage`. Running workloads are not affected.
+         */
+        post: operations["cordonNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/nodes/{id}/uncordon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Allow placing workloads on a node again
+         * @description Requires `cloud.nodes.manage`.
+         */
+        post: operations["uncordonNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/flavors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List workload sizes */
+        get: operations["listFlavors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List provisioning templates
+         * @description Every template version. Images are pinned by SHA-256 (VMs) or digest (containers).
+         */
+        get: operations["listTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/networks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List virtual networks */
+        get: operations["listNetworks"];
+        put?: never;
+        /**
+         * Create a virtual network
+         * @description Requires `cloud.networks.manage`. CIDRs come from 10.0.0.0/8 (except
+         *     10.255.0.0/16), between /16 and /27, and may not overlap a live network.
+         *     Records a `parallelf.cloud.v1.NetworkCreated` event.
+         */
+        post: operations["createNetwork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/networks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** Get a network */
+        get: operations["getNetwork"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a network
+         * @description The network must have no workloads. Requires `cloud.networks.manage` and `confirm` equal to its name.
+         */
+        delete: operations["deleteNetwork"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/workloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List workloads
+         * @description Live workloads, newest first. Pass `state=DELETED` to list deleted ones.
+         */
+        get: operations["listWorkloads"];
+        put?: never;
+        /**
+         * Create a VM or container
+         * @description Admits the workload (quota, address allocation) as PENDING; the
+         *     scheduler places it on a node and the node's agent provisions it.
+         *     Requires `cloud.workloads.manage`. Records a
+         *     `parallelf.cloud.v1.WorkloadCreated` event.
+         */
+        post: operations["createWorkload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/workloads/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** Get a workload */
+        get: operations["getWorkload"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a workload
+         * @description Asynchronous: the workload becomes DELETING and then DELETED once its
+         *     node has removed it. Requires `cloud.workloads.manage` and `confirm`
+         *     equal to the workload's name.
+         */
+        delete: operations["deleteWorkload"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/workloads/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a stopped workload */
+        post: operations["startWorkload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/workloads/{id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop a workload
+         * @description VMs get an ACPI shutdown and are powered off if they have not stopped after 90 seconds.
+         */
+        post: operations["stopWorkload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/workloads/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry a workload in ERROR
+         * @description Starts a new generation, so the node agent makes a fresh set of attempts.
+         */
+        post: operations["retryWorkload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/workloads/{id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** A workload's history */
+        get: operations["listWorkloadEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/workloads/{id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** Workload utilisation samples */
+        get: operations["getWorkloadMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/quotas/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        /** A project's quota and usage */
+        get: operations["getQuota"];
+        /**
+         * Set a project's quota
+         * @description Requires `cloud.quotas.manage`. Lowering a quota below current usage blocks new workloads only.
+         */
+        put: operations["putQuota"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The cloud audit trail
+         * @description Append-only, hash-chained record of every change. Newest first. Requires `cloud.audit.read`.
+         */
+        get: operations["listCloudAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cloud/audit/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recompute the audit hash chain */
+        get: operations["verifyCloudAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -266,6 +669,299 @@ export interface components {
             code: string;
             message?: string;
         };
+        Resources: {
+            vcpus: number;
+            memory_mib: number;
+            disk_gib: number;
+        };
+        Node: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /**
+             * @description NOT_READY once the agent has not synchronised for the node timeout (30 s by default).
+             * @enum {string}
+             */
+            status: "READY" | "NOT_READY";
+            /** @description false while cordoned. */
+            schedulable: boolean;
+            agent_version: string;
+            /** @description The node can run virtual machines. */
+            kvm: boolean;
+            /** @description The node can run containers. */
+            docker: boolean;
+            /** @example libvirt 12.0.0, QEMU 10.2.1, Docker 29.4.2 (API 1.54) */
+            hypervisor: string;
+            cpu_count: number;
+            memory_mib: number;
+            disk_gib: number;
+            reserved_cpus: number;
+            reserved_memory_mib: number;
+            reserved_disk_gib: number;
+            /** Format: date-time */
+            registered_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+            allocatable: components["schemas"]["Resources"];
+            allocated: components["schemas"]["Resources"];
+            /** @description Live workloads placed on the node. */
+            workloads: number;
+        };
+        NodeList: {
+            items: components["schemas"]["Node"][];
+        };
+        MetricPoint: {
+            /** Format: date-time */
+            at: string;
+            /** @description Host CPU busy time, or a workload's use of its own vCPUs. */
+            cpu_percent: number;
+            memory_used_mib: number;
+            memory_total_mib?: number;
+            disk_used_gib?: number;
+            disk_total_gib?: number;
+        };
+        Metrics: {
+            /** @enum {string} */
+            window: "15m" | "1h" | "6h" | "24h";
+            points: components["schemas"]["MetricPoint"][];
+        };
+        Flavor: {
+            /** Format: uuid */
+            id: string;
+            /** @example pf.small */
+            name: string;
+            vcpus: number;
+            memory_mib: number;
+            disk_gib: number;
+        };
+        FlavorList: {
+            items: components["schemas"]["Flavor"][];
+        };
+        /** @enum {string} */
+        WorkloadKind: "vm" | "container";
+        Image: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            kind: components["schemas"]["WorkloadKind"];
+            /** @description https URL of a qcow2 image (VM) or a digest-pinned OCI reference (container). */
+            source: string;
+            /** @description Checked by the node agent before a VM image is used. */
+            sha256?: string;
+            os: string;
+        };
+        Template: {
+            /** Format: uuid */
+            id: string;
+            /** @example cirros */
+            name: string;
+            version: number;
+            kind: components["schemas"]["WorkloadKind"];
+            description: string;
+            image: components["schemas"]["Image"];
+            default_flavor: components["schemas"]["Flavor"];
+            /** @description cloud-config merged into every VM's user-data. */
+            cloud_config?: Record<string, never>;
+            /** @description The guest configures its own address (required on lab networks). */
+            static_network: boolean;
+            command?: string[];
+            cap_add?: string[];
+            deprecated: boolean;
+        };
+        TemplateList: {
+            items: components["schemas"]["Template"][];
+        };
+        /**
+         * @description nat: outbound internet through the host. isolated: no route off the
+         *     network. lab: isolated, no DHCP, and the host has no address on it.
+         * @enum {string}
+         */
+        NetworkKind: "nat" | "isolated" | "lab";
+        Network: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            project_id: string;
+            name: components["schemas"]["ResourceName"];
+            kind: components["schemas"]["NetworkKind"];
+            /** @example 10.20.1.0/24 */
+            cidr: string;
+            /** @description The host's address on the network. Absent on lab networks. */
+            gateway_ip?: string;
+            bridge_name: string;
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            deleted_at?: string;
+            workloads: number;
+            /** @description Addresses available to workloads. */
+            capacity: number;
+        };
+        NetworkList: {
+            items: components["schemas"]["Network"][];
+        };
+        /** @description 3-40 characters; lower-case letters, digits and hyphens. */
+        ResourceName: string;
+        NetworkCreate: {
+            /** Format: uuid */
+            project_id: string;
+            name: components["schemas"]["ResourceName"];
+            kind: components["schemas"]["NetworkKind"];
+            /** @example 10.20.1.0/24 */
+            cidr: string;
+        };
+        /** @enum {string} */
+        WorkloadState: "PENDING" | "SCHEDULED" | "PROVISIONING" | "RUNNING" | "STOPPING" | "STOPPED" | "UNKNOWN" | "DELETING" | "DELETED" | "ERROR";
+        Workload: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            project_id: string;
+            name: components["schemas"]["ResourceName"];
+            kind: components["schemas"]["WorkloadKind"];
+            /** Format: uuid */
+            template_id: string;
+            template: string;
+            template_version: number;
+            /** Format: uuid */
+            flavor_id: string;
+            flavor: string;
+            /** Format: uuid */
+            network_id: string;
+            network: string;
+            /** Format: uuid */
+            node_id?: string;
+            node?: string;
+            vcpus: number;
+            memory_mib: number;
+            disk_gib: number;
+            ip: string;
+            mac: string;
+            /** @enum {string} */
+            desired_state: "running" | "stopped" | "deleted";
+            state: components["schemas"]["WorkloadState"];
+            /** @description Incremented by every requested change. */
+            generation: number;
+            /** @description The newest generation the node has applied. */
+            observed_generation: number;
+            status_message: string;
+            spec: {
+                ssh_authorized_keys?: string[];
+                env?: {
+                    [key: string]: string;
+                };
+            };
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            state_changed_at: string;
+            /** Format: date-time */
+            deleted_at?: string;
+        };
+        WorkloadList: {
+            items: components["schemas"]["Workload"][];
+        };
+        WorkloadCreate: {
+            /** Format: uuid */
+            project_id: string;
+            name: components["schemas"]["ResourceName"];
+            /** @example cirros */
+            template: string;
+            /** @description Defaults to the newest version that is not deprecated. */
+            template_version?: number;
+            /** @description Defaults to the template's default flavor. */
+            flavor?: string;
+            /** Format: uuid */
+            network_id: string;
+            ssh_authorized_keys?: string[];
+            /** @description Container environment variables. */
+            env?: {
+                [key: string]: string;
+            };
+        };
+        WorkloadEvent: {
+            id: number;
+            /** Format: date-time */
+            at: string;
+            /** @enum {string} */
+            type: "created" | "request" | "state" | "status";
+            message: string;
+        };
+        WorkloadEventList: {
+            items: components["schemas"]["WorkloadEvent"][];
+        };
+        Quota: {
+            /** Format: uuid */
+            project_id: string;
+            max_vcpus: number;
+            max_memory_mib: number;
+            max_disk_gib: number;
+            max_workloads: number;
+            /** @description true when the project uses the platform default. */
+            is_default: boolean;
+            updated_by?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        Usage: {
+            vcpus: number;
+            memory_mib: number;
+            disk_gib: number;
+            workloads: number;
+        };
+        QuotaStatus: {
+            quota: components["schemas"]["Quota"];
+            usage: components["schemas"]["Usage"];
+        };
+        QuotaUpdate: {
+            max_vcpus: number;
+            max_memory_mib: number;
+            max_disk_gib: number;
+            max_workloads: number;
+        };
+        AuditEntry: {
+            seq: number;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            at: string;
+            /** @enum {string} */
+            actor_type: "user" | "agent" | "system";
+            actor_id: string;
+            actor_name: string;
+            /** @example cloud.workloads.delete */
+            action: string;
+            resource_type: string;
+            resource_id: string;
+            /** Format: uuid */
+            project_id?: string;
+            /** @enum {string} */
+            outcome: "success" | "denied" | "failed";
+            request_id: string;
+            details: {
+                [key: string]: string;
+            };
+            prev_hash: string;
+            /** @description sha256 of prev_hash and the entry's canonical encoding. */
+            hash: string;
+        };
+        AuditPage: {
+            items: components["schemas"]["AuditEntry"][];
+            /** @description Present when older entries exist. Pass it as `before`. */
+            next_before?: number;
+        };
+        AuditVerification: {
+            valid: boolean;
+            entries: number;
+            /** @description The first entry whose hash does not match. Absent when valid. */
+            first_invalid_seq?: number;
+            /** Format: date-time */
+            checked_at: string;
+        };
     };
     responses: {
         /** @description The request is malformed. */
@@ -322,8 +1018,32 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
+        /** @description The `confirm` parameter is missing or does not match the resource's name. */
+        ConfirmationRequired: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Accepted; the node converges the workload asynchronously. */
+        WorkloadAccepted: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Workload"];
+            };
+        };
     };
-    parameters: never;
+    parameters: {
+        ResourceID: string;
+        /** @description The resource's name, repeated to confirm a destructive operation. */
+        Confirm: string;
+        ProjectFilter: string;
+        MetricWindow: "15m" | "1h" | "6h" | "24h";
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -550,6 +1270,638 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listNodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every registered node. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The node. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Node"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteNode: {
+        parameters: {
+            query: {
+                /** @description The resource's name, repeated to confirm a destructive operation. */
+                confirm: components["parameters"]["Confirm"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The node was removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            428: components["responses"]["ConfirmationRequired"];
+        };
+    };
+    getNodeMetrics: {
+        parameters: {
+            query?: {
+                window?: components["parameters"]["MetricWindow"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Samples in the window, oldest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Metrics"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    cordonNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The node. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Node"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    uncordonNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The node. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Node"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listFlavors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every flavor, smallest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlavorList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Templates, newest version first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listNetworks: {
+        parameters: {
+            query?: {
+                project_id?: components["parameters"]["ProjectFilter"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Live networks. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    createNetwork: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NetworkCreate"];
+            };
+        };
+        responses: {
+            /** @description The network. */
+            201: {
+                headers: {
+                    /** @description URL of the new network. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Network"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getNetwork: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The network, including a deleted one. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Network"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteNetwork: {
+        parameters: {
+            query: {
+                /** @description The resource's name, repeated to confirm a destructive operation. */
+                confirm: components["parameters"]["Confirm"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The network was deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            428: components["responses"]["ConfirmationRequired"];
+        };
+    };
+    listWorkloads: {
+        parameters: {
+            query?: {
+                project_id?: components["parameters"]["ProjectFilter"];
+                state?: components["schemas"]["WorkloadState"];
+                node_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Workloads. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkloadList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    createWorkload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkloadCreate"];
+            };
+        };
+        responses: {
+            /** @description The admitted workload. */
+            201: {
+                headers: {
+                    /** @description URL of the new workload. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workload"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getWorkload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The workload, including a deleted one. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workload"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteWorkload: {
+        parameters: {
+            query: {
+                /** @description The resource's name, repeated to confirm a destructive operation. */
+                confirm: components["parameters"]["Confirm"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deletion accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workload"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            428: components["responses"]["ConfirmationRequired"];
+        };
+    };
+    startWorkload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: components["responses"]["WorkloadAccepted"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    stopWorkload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: components["responses"]["WorkloadAccepted"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    retryWorkload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: components["responses"]["WorkloadAccepted"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listWorkloadEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Events, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkloadEventList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getWorkloadMetrics: {
+        parameters: {
+            query?: {
+                window?: components["parameters"]["MetricWindow"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Samples in the window, oldest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Metrics"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getQuota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quota (the default when none was set) and current usage. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuotaStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putQuota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuotaUpdate"];
+            };
+        };
+        responses: {
+            /** @description The new quota and current usage. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuotaStatus"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listCloudAudit: {
+        parameters: {
+            query?: {
+                resource_type?: "node" | "network" | "workload" | "quota";
+                resource_id?: string;
+                limit?: number;
+                /** @description The `next_before` value of the previous page. */
+                before?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of entries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    verifyCloudAudit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether every entry still matches its hash. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditVerification"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
 }

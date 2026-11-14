@@ -4,6 +4,8 @@
 docs
 web
 tests
+services/node-agent
+bin
 **/node_modules
 **/.next
 **/__pycache__

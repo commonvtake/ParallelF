@@ -13,11 +13,12 @@ message encoded as protojson (`content-type: application/json`).
 |---|---|---|
 | `ce-specversion` | `1.0` | |
 | `ce-id` | `0193a7c2-5b1e-7c3a-9f10-2a4b6c8d0e1f` | UUIDv7, also the deduplication key |
-| `ce-source` | `/parallelf/core/pf-core` | Producing service |
+| `ce-source` | `/parallelf/core/pf-core` | Producing service (`/parallelf/cloud/pf-cloudd` for cloud events) |
 | `ce-type` | `parallelf.core.v1.ProjectCreated` | Fully qualified message name |
 | `ce-time` | `2026-11-13T18:21:00Z` | RFC 3339, UTC |
 | `ce-subject` | `project/0193a7c2-...` | Entity the event is about |
 | `ce-pfschemaversion` | `1` | Incremented on additive payload changes |
+| `ce-pfproject` | `0193a7c2-...` | Owning project, on events about project resources (networks, workloads) |
 | `content-type` | `application/json` | protojson |
 
 ## Catalogue (v1)
@@ -26,6 +27,15 @@ message encoded as protojson (`content-type: application/json`).
 |---|---|---|---|
 | `parallelf.core.v1.ProjectCreated` | `pf.core.evt.project.created` | pf-core | Written to the outbox |
 | `parallelf.core.v1.ProjectDeleted` | `pf.core.evt.project.deleted` | pf-core | Written to the outbox |
+| `parallelf.cloud.v1.NodeRegistered` | `pf.cloud.evt.node.registered` | pf-cloudd | Written to the outbox |
+| `parallelf.cloud.v1.NodeStatusChanged` | `pf.cloud.evt.node.status_changed` | pf-cloudd | Written to the outbox |
+| `parallelf.cloud.v1.NetworkCreated` | `pf.cloud.evt.network.created` | pf-cloudd | Written to the outbox |
+| `parallelf.cloud.v1.NetworkDeleted` | `pf.cloud.evt.network.deleted` | pf-cloudd | Written to the outbox |
+| `parallelf.cloud.v1.WorkloadCreated` | `pf.cloud.evt.workload.created` | pf-cloudd | Written to the outbox |
+| `parallelf.cloud.v1.WorkloadStateChanged` | `pf.cloud.evt.workload.state_changed` | pf-cloudd | Written to the outbox |
+| `parallelf.cloud.v1.WorkloadDeleted` | `pf.cloud.evt.workload.deleted` | pf-cloudd | Written to the outbox |
+
+Cloud subjects are `node/<id>`, `network/<id>` and `workload/<id>`. Workload states and network kinds are carried as strings (the values in the OpenAPI contract), so adding a state is not a breaking change.
 
 ## Delivery
 

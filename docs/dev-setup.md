@@ -77,7 +77,7 @@ Tokens live for five minutes. The token script uses the realm's `parallelf-dev-c
 
 All services read `PF_*` environment variables. Each also accepts `NAME_FILE` pointing at a file that holds the value (the Docker and Kubernetes secrets convention). A service reports every invalid setting at once and refuses to start.
 
-**Shared by pf-core, pf-gateway and pf-aid**
+**Shared by pf-core, pf-cloudd, pf-gateway and pf-aid**
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -87,7 +87,8 @@ All services read `PF_*` environment variables. Each also accepts `NAME_FILE` po
 | `PF_LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error` |
 
 **pf-core:** `PF_HTTP_ADDR` (`:9001`), `PF_DATABASE_URL` (required, secret), `PF_SHUTDOWN_TIMEOUT` (`10s`).
-**pf-gateway:** `PF_HTTP_ADDR` (`:8000`), `PF_UPSTREAM_CORE_URL`, `PF_UPSTREAM_AI_URL` (required), `PF_SHUTDOWN_TIMEOUT`.
+**pf-cloudd:** `PF_HTTP_ADDR` (`:9002`), `PF_AGENT_ADDR` (`:9102`), `PF_DATABASE_URL` (required, secret), `PF_CORE_URL`, `PF_CLOUD_JOIN_TOKEN` (required, secret), and the scheduling settings in the [Cloud guide](cloud.md#configuration), which also lists the node agent's settings.
+**pf-gateway:** `PF_HTTP_ADDR` (`:8000`), `PF_UPSTREAM_CORE_URL`, `PF_UPSTREAM_CLOUD_URL`, `PF_UPSTREAM_AI_URL` (required), `PF_SHUTDOWN_TIMEOUT`.
 **pf-aid:** `PF_HTTP_HOST` (`0.0.0.0`), `PF_HTTP_PORT` (`9006`), `PF_VERSION`.
 
 **Dashboard**
@@ -143,14 +144,17 @@ Points worth knowing:
 
 ## 5. Working on each part
 
-### Go (`pkg/`, `services/core`, `services/gateway`)
+### Go (`pkg/`, `services/core`, `services/cloud`, `services/node-agent`, `services/gateway`)
 
 ```sh
 go test ./...                 # unit tests; store tests skip without a database
 make test-go-db               # also runs the PostgreSQL store tests against the running stack
 make lint-go
 go run ./services/gateway/cmd/pf-gateway   # with the PF_* variables exported
+make agent                    # build and run the node agent in the foreground (sudo)
 ```
+
+The node agent uses only the standard library and the repository's own packages; keep it that way, since it runs as root on compute hosts. Its runtimes sit behind `internal/runtime.Runtime`, and the agent's tests drive the reconciler with a fake runtime and a fake clock.
 
 Conventions: errors are RFC 9457 problems written with `httpx.WriteProblem`; logs go through `slog` with the context (`logger.InfoContext(r.Context(), ...)`) so the request ID is attached; configuration is read only in `internal/config` through `pkg/config`.
 
@@ -195,8 +199,8 @@ Pages are server components that call the gateway with `gatewayGet`. Client comp
 
 **Adding a migration**
 
-1. Add `services/core/migrations/NNNN_description.up.sql` and `.down.sql`. Never edit an applied migration.
-2. Grant the runtime role `pf_core` only the privileges it needs, inside the migration.
+1. Add `services/<service>/migrations/NNNN_description.up.sql` and `.down.sql` (`core` or `cloud`). Never edit an applied migration.
+2. Grant the runtime role (`pf_core`, `pf_cloud`) only the privileges it needs, inside the migration.
 3. `make migrate` applies it to the running stack; CI applies all migrations to a fresh database.
 
 ## 7. Logging and tracing a request
@@ -213,11 +217,12 @@ make logs | grep 019a....        # the request_id from the response
 
 | Suite | Command | Needs | What it proves |
 |---|---|---|---|
-| Go unit + store | `make test-go` / `make test-go-db` | — / running stack | Handlers, middleware, auth, config, SQL against real PostgreSQL |
+| Go unit + store | `make test-go` / `make test-go-db` | — / running stack | Handlers, middleware, auth, config, scheduler, agent reconciliation, SQL against real PostgreSQL |
 | Python unit | `make test-python` | — | Settings, auth, logging, middleware, app factory, pf-aid |
 | Dashboard unit | `make test-web` | — | Config, session store, token refresh, redirects, BFF path rules |
 | Smoke | `make verify` | running stack | The full request path with real tokens, in 23 curl checks |
-| Integration | `make test-integration` | running stack | API behaviour and responses against the OpenAPI schemas, outbox rows in PostgreSQL, dashboard HTTP behaviour |
+| Integration | `make test-integration` | running stack (a node agent for the cloud runtime tests) | API behaviour and responses against the OpenAPI schemas, outbox rows in PostgreSQL, dashboard HTTP behaviour, real VMs and containers |
+| Cloud walk-through | `make verify-cloud` | running stack and node agent | One host, one VM, end to end |
 | End-to-end | `make test-e2e` | running stack, `pnpm exec playwright install chromium` | Real browser sign-in, navigation, projects, roles, sign-out, no token in the browser |
 
 CI (`.github/workflows/ci.yml`) runs all of them on every pull request: contracts, Go, Python and dashboard jobs, then a stack job that builds the images, starts Compose and runs smoke, integration and end-to-end tests.
@@ -231,5 +236,9 @@ CI (`.github/workflows/ci.yml`) runs all of them on every pull request: contract
 | Every API call returns 401 after editing the realm | Tokens from the old realm container no longer verify. Sign out and in again. |
 | Changed a password or user in the realm file, nothing happened | The realm is imported only into an empty Keycloak. `make clean && make up`. |
 | `port is already allocated` | Another process uses 3000, 8000, 8080 or 5432. Stop it, or change `PF_POSTGRES_HOST_PORT` in `.env` for the database. |
-| Changed a password in `.env`, PostgreSQL rejects it | Roles are created only when the volume is first initialised. `make clean && make up`. |
+| Changed a password in `.env`, PostgreSQL rejects it | A role's password is set when the role is created. `make clean && make up`, or `ALTER ROLE` in `make psql`. |
+| No compute node appears in Cloud | `journalctl -u pf-node-agent` (or the `make agent` output). `make agent-check` lists the runtimes the host offers; a 401 means the join token in `/etc/parallelf/node-agent.env` differs from `PF_CLOUD_JOIN_TOKEN`. |
+| A workload stays `PENDING` | Its `status_message` says why, e.g. `0/1 nodes available: 1 insufficient memory`, or no node has KVM/Docker. |
+| A VM network fails to start | Its CIDR overlaps a route on the host (`ip route`); libvirt refuses it. Pick another range. |
+| A VM is `RUNNING` but does not answer | `sudo cat /var/lib/parallelf/cloud/instances/<id>/console.log` shows the guest's serial console. |
 | Signed out after restarting the dashboard | Expected: sessions are held in the dashboard's memory. |

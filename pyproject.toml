@@ -40,6 +40,10 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S101", "S105", "S106"] # asserts and dummy credentials in tests
+# Developer scripts: command-line output, local HTTP calls and ping are their job.
+"scripts/**" = ["T201", "S310", "S311", "S603", "S607"]
+# The cloud runtime tests inspect the host with virsh, docker, ip and ping.
+"tests/integration/test_cloud.py" = ["S311", "S603", "S607"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -47,7 +51,7 @@ strict = true
 warn_unreachable = true
 mypy_path = ["python/pf_common/src", "services/ai/src"]
 explicit_package_bases = true
-files = ["python/pf_common/src", "services/ai/src", "tests/integration"]
+files = ["python/pf_common/src", "services/ai/src", "tests/integration", "scripts/dev"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --import-mode=importlib --strict-markers"

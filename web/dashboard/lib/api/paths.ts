@@ -1,6 +1,6 @@
 // Mapping of browser requests under /bff/api/ to gateway API paths.
 
-const ALLOWED_DOMAINS = new Set(["core", "ai", "system"]);
+const ALLOWED_DOMAINS = new Set(["core", "cloud", "ai", "system"]);
 const SAFE_SEGMENT = /^[A-Za-z0-9._~-]+$/;
 
 /**

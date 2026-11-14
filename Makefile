@@ -46,6 +46,10 @@ logs: ## Follow the logs of every service
 verify: ## Smoke-test the running stack (needs only curl)
 	@scripts/dev/verify.sh
 
+.PHONY: verify-cloud
+verify-cloud: ## One host, one VM: create, run, ping, stop, start and delete a CirrOS VM
+	@python3 scripts/dev/verify_cloud.py
+
 .PHONY: token
 token: ## Print an access token for a development user (AS=owner|viewer)
 	@scripts/dev/token.sh $(or $(AS),owner)
@@ -55,8 +59,41 @@ psql: ## Open psql in the database container as the superuser
 	$(COMPOSE) exec postgres psql -U postgres -d parallelf
 
 .PHONY: migrate
-migrate: ## Apply pending pf-core migrations to the running database
+migrate: ## Apply pending migrations to the running database
+	$(COMPOSE) run --rm db-init
 	$(COMPOSE) run --rm migrate-core
+	$(COMPOSE) run --rm migrate-cloud
+
+# --- Compute host (ParallelF Cloud) -----------------------------------------
+
+AGENT_BIN := bin/pf-node-agent
+
+.PHONY: cloud-host-setup
+cloud-host-setup: ## Install KVM, libvirt, QEMU and genisoimage on this host (sudo)
+	sudo scripts/dev/cloud-host-setup.sh
+
+.PHONY: agent-build
+agent-build: ## Build the node agent into bin/
+	CGO_ENABLED=0 go build -trimpath -o $(AGENT_BIN) ./services/node-agent/cmd/pf-node-agent
+
+.PHONY: agent-check
+agent-check: agent-build ## Show which runtimes the agent can use on this host
+	sudo env PF_AGENT_CLOUD_URL=http://localhost:9102 $(AGENT_BIN) -check
+
+.PHONY: agent
+agent: agent-build ## Run the node agent in the foreground (Ctrl-C stops it; workloads keep running)
+	sudo env PF_AGENT_CLOUD_URL=http://localhost:9102 PF_AGENT_JOIN_TOKEN=$(PF_CLOUD_JOIN_TOKEN) \
+		PF_LOG_LEVEL=$(PF_LOG_LEVEL) $(AGENT_BIN)
+
+.PHONY: agent-install
+agent-install: agent-build ## Install and start the node agent as a systemd service
+	sudo env PF_CLOUD_JOIN_TOKEN=$(PF_CLOUD_JOIN_TOKEN) scripts/dev/agent-install.sh $(AGENT_BIN)
+
+.PHONY: agent-uninstall
+agent-uninstall: ## Stop and remove the agent service (workloads keep running)
+	-sudo systemctl disable --now pf-node-agent
+	sudo rm -f /etc/systemd/system/pf-node-agent.service /usr/local/bin/pf-node-agent
+	sudo systemctl daemon-reload
 
 # --- Code generation ---------------------------------------------------------
 
@@ -107,6 +144,8 @@ test-go: ## Go unit tests (store tests need PF_TEST_DATABASE_URL, else they skip
 .PHONY: test-go-db
 test-go-db: ## Go tests including the PostgreSQL store tests, against the running stack
 	PF_TEST_DATABASE_URL="postgres://pf_core:$(PF_CORE_DB_PASSWORD)@localhost:$(PF_POSTGRES_HOST_PORT)/parallelf?sslmode=disable" \
+	PF_TEST_CLOUD_DATABASE_URL="postgres://pf_cloud:$(PF_CLOUD_DB_PASSWORD)@localhost:$(PF_POSTGRES_HOST_PORT)/parallelf?sslmode=disable" \
+	PF_TEST_ADMIN_DATABASE_URL="postgres://postgres:$(POSTGRES_PASSWORD)@localhost:$(PF_POSTGRES_HOST_PORT)/parallelf?sslmode=disable" \
 		go test -race -count=1 ./...
 
 .PHONY: test-python

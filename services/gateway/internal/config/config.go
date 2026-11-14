@@ -14,6 +14,7 @@ type Config struct {
 	HTTPAddr        string
 	LogLevel        string
 	CoreURL         *url.URL
+	CloudURL        *url.URL
 	AIURL           *url.URL
 	OIDC            authn.OIDCSettings
 	ShutdownTimeout time.Duration
@@ -25,6 +26,7 @@ func Load(l *config.Loader) (Config, error) {
 		HTTPAddr:        l.String("PF_HTTP_ADDR", ":8000"),
 		LogLevel:        l.OneOf("PF_LOG_LEVEL", "info", "debug", "info", "warn", "error"),
 		CoreURL:         l.URL("PF_UPSTREAM_CORE_URL"),
+		CloudURL:        l.URL("PF_UPSTREAM_CLOUD_URL"),
 		AIURL:           l.URL("PF_UPSTREAM_AI_URL"),
 		OIDC:            authn.LoadOIDCSettings(l),
 		ShutdownTimeout: l.Duration("PF_SHUTDOWN_TIMEOUT", 10*time.Second),

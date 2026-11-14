@@ -50,7 +50,7 @@ def test_unknown_route_is_a_problem_document(
 def test_unknown_api_domain_is_not_routed(
     gateway: httpx.Client, owner_headers: dict[str, str]
 ) -> None:
-    response = gateway.get("/api/v1/cloud/workloads", headers=owner_headers)
+    response = gateway.get("/api/v1/vpn/tunnels", headers=owner_headers)
 
     assert response.status_code == 404
 
@@ -64,17 +64,21 @@ def test_system_status_reports_every_component(
     report = response.json()
     contract("SystemStatus", report)
     assert report["status"] == "ok"
-    states = {component["name"]: component["status"] for component in report["components"]}
-    assert states == {
-        "pf-gateway": "ok",
-        "core": "ok",
-        "postgres": "ok",
-        "ai": "ok",
-        "identity-provider": "ok",
+    states = {
+        (component.get("reported_by"), component["name"]): component["status"]
+        for component in report["components"]
     }
-    postgres = next(c for c in report["components"] if c["name"] == "postgres")
-    assert postgres["kind"] == "dependency"
-    assert postgres["reported_by"] == "core"
+    assert states == {
+        (None, "pf-gateway"): "ok",
+        (None, "core"): "ok",
+        (None, "cloud"): "ok",
+        (None, "ai"): "ok",
+        (None, "identity-provider"): "ok",
+        ("core", "postgres"): "ok",
+        ("cloud", "postgres"): "ok",
+    }
+    dependencies = [c for c in report["components"] if c["name"] == "postgres"]
+    assert {c["kind"] for c in dependencies} == {"dependency"}
 
 
 def test_system_status_requires_authentication(gateway: httpx.Client) -> None:
