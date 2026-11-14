@@ -192,6 +192,11 @@ func TestAdmissionEnforcesQuotaAndReusesAddresses(t *testing.T) {
 	n := newNetwork(t, s, project, "nat")
 
 	a := newWorkload(t, s, project, n, "cirros", "")
+	// Names are unique among a project's live workloads (checked while the
+	// quota still has room, so the name is what is refused).
+	if _, err := s.CreateWorkload(ctx, domain.WorkloadInput{ProjectID: project, Name: a.Name, Template: "cirros", NetworkID: n.ID}, userActor); !errors.Is(err, domain.ErrNameTaken) {
+		t.Fatalf("duplicate name: %v", err)
+	}
 	b := newWorkload(t, s, project, n, "cirros", "")
 	if a.IP == b.IP || a.State != domain.StatePending || a.MemoryMiB != 256 || a.TemplateVersion != 1 {
 		t.Fatalf("a=%+v b=%+v", a, b)
@@ -215,9 +220,6 @@ func TestAdmissionEnforcesQuotaAndReusesAddresses(t *testing.T) {
 	}
 	if got := outboxSubjects(t, s, a.ID); strings.Join(got, ",") != "workload.created,workload.state_changed,workload.deleted" {
 		t.Fatalf("events: %v", got)
-	}
-	if _, err := s.CreateWorkload(ctx, domain.WorkloadInput{ProjectID: project, Name: b.Name, Template: "cirros", NetworkID: n.ID}, userActor); !errors.Is(err, domain.ErrNameTaken) {
-		t.Fatalf("duplicate name: %v", err)
 	}
 }
 

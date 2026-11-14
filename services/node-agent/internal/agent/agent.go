@@ -129,7 +129,7 @@ func (a *Agent) Observe(ctx context.Context) []cloudagent.ObservedWorkload {
 	out := make([]cloudagent.ObservedWorkload, 0, len(desired))
 	for _, w := range desired {
 		inst, exists := instances[w.ID]
-		obs := cloudagent.ObservedWorkload{ID: w.ID}
+		obs := cloudagent.ObservedWorkload{ID: w.ID, Generation: w.Generation}
 
 		a.mu.Lock()
 		obs.AppliedGeneration = a.state.Applied[w.ID]

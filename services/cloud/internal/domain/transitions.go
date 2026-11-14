@@ -28,6 +28,12 @@ func Observe(w Workload, obs *cloudagent.ObservedWorkload) Transition {
 	if obs.AppliedGeneration > t.ObservedGeneration {
 		t.ObservedGeneration = obs.AppliedGeneration
 	}
+	// A failure of an older generation was answered by a newer request
+	// (typically retry) that the agent has not seen yet: it says nothing
+	// about the new attempt.
+	if obs.State == cloudagent.ObservedError && obs.Generation != 0 && obs.Generation < w.Generation {
+		return t
+	}
 	applied := obs.AppliedGeneration >= w.Generation
 
 	switch w.DesiredState {

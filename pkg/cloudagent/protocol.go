@@ -105,9 +105,14 @@ type ObservedWorkload struct {
 	ID string `json:"id"`
 	// AppliedGeneration is the newest desired generation the agent has fully
 	// applied. Zero when it has not applied any yet.
-	AppliedGeneration int64  `json:"applied_generation"`
-	State             string `json:"state"`
-	Message           string `json:"message,omitempty"`
+	AppliedGeneration int64 `json:"applied_generation"`
+	// Generation is the desired generation the agent was converging to when
+	// it made this observation. A report about an older generation than the
+	// control plane's current one may describe an intent that has since
+	// changed (a retry, a new start). Zero from agents that predate it.
+	Generation int64  `json:"generation,omitempty"`
+	State      string `json:"state"`
+	Message    string `json:"message,omitempty"`
 	// Usage is set when the workload is running and a sample was taken.
 	CPUPercent    *float64 `json:"cpu_percent,omitempty"`
 	MemoryUsedMiB *int64   `json:"memory_used_mib,omitempty"`

@@ -33,6 +33,12 @@ func TestObserve(t *testing.T) {
 		{"delete in progress", DesiredDeleted, StateDeleting, 3, obs("stopping", 2, ""), StateDeleting, "", 2},
 		{"delete finished", DesiredDeleted, StateDeleting, 3, obs("absent", 3, ""), StateDeleted, "", 3},
 		{"observed generation never goes backwards", DesiredRunning, StateRunning, 4, obs("running", 2, ""), StateProvisioning, "", 4},
+		{"a failure of an older generation does not undo a retry", DesiredRunning, StateScheduled, 3,
+			&cloudagent.ObservedWorkload{State: "error", Generation: 2, AppliedGeneration: 1, Message: "image checksum mismatch"},
+			StateScheduled, "", 1},
+		{"a failure of the current generation counts", DesiredRunning, StateProvisioning, 3,
+			&cloudagent.ObservedWorkload{State: "error", Generation: 3, AppliedGeneration: 1, Message: "image checksum mismatch"},
+			StateError, "image checksum mismatch", 1},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

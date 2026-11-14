@@ -209,7 +209,7 @@ func TestAlreadyConvergedNeedsNoWork(t *testing.T) {
 	a.SetDesired(desired(vm("w1", cloudagent.PowerRunning, 4)))
 	settle(t, a)
 
-	if o := observed(a, "w1"); o.AppliedGeneration != 4 || o.State != cloudagent.ObservedRunning {
+	if o := observed(a, "w1"); o.AppliedGeneration != 4 || o.Generation != 4 || o.State != cloudagent.ObservedRunning {
 		t.Fatalf("observed %+v", o)
 	}
 	if calls := rt.callList(); len(calls) != 0 {
