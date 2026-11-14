@@ -393,7 +393,9 @@ func (s *Postgres) ChangeDesiredState(ctx context.Context, id string, op domain.
 			return domain.ErrInvalidState
 		}
 		now := s.now()
-		desired, state, msg := w.DesiredState, w.State, ""
+		// Every operation sets the new state; desired stays unless it changes.
+		var state string
+		desired, msg := w.DesiredState, ""
 		switch op {
 		case domain.OpStart:
 			if !domain.CanStart(w) {

@@ -9,6 +9,7 @@ them with ``make test-integration``, which exports the settings in ``.env``.
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -52,16 +53,42 @@ def _password_grant(username: str, password: str, *, scope: str | None = None) -
     return body
 
 
+class _Tokens:
+    """Access tokens per development user, renewed before they expire.
+
+    Access tokens live five minutes; a full run (with the cloud tests that
+    boot VMs) takes longer, so session-wide tokens would go stale.
+    """
+
+    MAX_AGE_S = 200
+
+    def __init__(self) -> None:
+        self._tokens: dict[str, tuple[str, float]] = {}
+
+    def get(self, username: str, password_env: str) -> str:
+        cached = self._tokens.get(username)
+        if cached and time.monotonic() - cached[1] < self.MAX_AGE_S:
+            return cached[0]
+        token = str(_password_grant(username, _required_env(password_env))["access_token"])
+        self._tokens[username] = (token, time.monotonic())
+        return token
+
+
 @pytest.fixture(scope="session")
-def owner_token() -> str:
+def _tokens() -> _Tokens:
+    return _Tokens()
+
+
+@pytest.fixture
+def owner_token(_tokens: _Tokens) -> str:
     """Access token of the development user with the ``owner`` role."""
-    return str(_password_grant("owner", _required_env("PF_DEV_OWNER_PASSWORD"))["access_token"])
+    return _tokens.get("owner", "PF_DEV_OWNER_PASSWORD")
 
 
-@pytest.fixture(scope="session")
-def viewer_token() -> str:
+@pytest.fixture
+def viewer_token(_tokens: _Tokens) -> str:
     """Access token of the development user with the ``viewer`` role."""
-    return str(_password_grant("viewer", _required_env("PF_DEV_VIEWER_PASSWORD"))["access_token"])
+    return _tokens.get("viewer", "PF_DEV_VIEWER_PASSWORD")
 
 
 @pytest.fixture(scope="session")
@@ -71,12 +98,12 @@ def owner_id_token() -> str:
     return str(tokens["id_token"])
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def owner_headers(owner_token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {owner_token}"}
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def viewer_headers(viewer_token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {viewer_token}"}
 
@@ -133,10 +160,14 @@ def database() -> Iterator[psycopg.Connection[tuple[Any, ...]]]:
 
 
 @pytest.fixture
-def make_project(gateway: httpx.Client, owner_headers: dict[str, str]) -> Iterator[ProjectFactory]:
+def make_project(gateway: httpx.Client, _tokens: _Tokens) -> Iterator[ProjectFactory]:
     """Create projects through the API; they are deleted after the test."""
     created: list[str] = []
     counter = iter(range(1000))
+
+    def owner() -> dict[str, str]:
+        # Fetched per call: the cleanup may run long after the test started.
+        return {"Authorization": f"Bearer {_tokens.get('owner', 'PF_DEV_OWNER_PASSWORD')}"}
 
     def create(**overrides: str) -> dict[str, Any]:
         body = {
@@ -144,7 +175,7 @@ def make_project(gateway: httpx.Client, owner_headers: dict[str, str]) -> Iterat
             "name": "Integration test",
             **overrides,
         }
-        response = gateway.post("/api/v1/core/projects", json=body, headers=owner_headers)
+        response = gateway.post("/api/v1/core/projects", json=body, headers=owner())
         assert response.status_code == 201, response.text
         project: dict[str, Any] = response.json()
         created.append(project["id"])
@@ -153,4 +184,4 @@ def make_project(gateway: httpx.Client, owner_headers: dict[str, str]) -> Iterat
     yield create
 
     for project_id in created:
-        gateway.delete(f"/api/v1/core/projects/{project_id}", headers=owner_headers)
+        gateway.delete(f"/api/v1/core/projects/{project_id}", headers=owner())

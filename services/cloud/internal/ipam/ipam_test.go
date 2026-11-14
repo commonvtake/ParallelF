@@ -1,6 +1,7 @@
 package ipam
 
 import (
+	"errors"
 	"net/netip"
 	"regexp"
 	"strings"
@@ -29,7 +30,7 @@ func TestValidateCIDR(t *testing.T) {
 	}
 	for raw, want := range invalid {
 		_, err := ValidateCIDR(raw)
-		if err == nil || (!strings.Contains(err.Error(), want) && !(want == "IPv4" && strings.Contains(err.Error(), "IPv4"))) {
+		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("ValidateCIDR(%q) = %v, want error containing %q", raw, err, want)
 		}
 	}
@@ -88,7 +89,7 @@ func TestNextFreeSkipsUsedAddressesAndReportsExhaustion(t *testing.T) {
 	for a := netip.MustParseAddr("10.30.0.2"); a.Compare(netip.MustParseAddr("10.30.0.24")) <= 0; a = a.Next() {
 		used[a] = true
 	}
-	if _, err := NextFree(p, KindNAT, used); err != ErrExhausted {
+	if _, err := NextFree(p, KindNAT, used); !errors.Is(err, ErrExhausted) {
 		t.Fatalf("NextFree on a full network = %v, want ErrExhausted", err)
 	}
 }

@@ -451,9 +451,8 @@ def test_workload_admission_rules(owner_cloud: Cloud, resources: Resources) -> N
 
     assert rejected(admit("no-such-template", lab["id"])) == {("template", "not_found")}
     assert {f for f, _ in rejected(admit("cirros", lab["id"], flavor="pf.huge"))} == {"flavor"}
-    assert {f for f, _ in rejected(admit("cirros", lab["id"], ssh_authorized_keys=["nope"]))} == {
-        "ssh_authorized_keys"
-    }
+    bad_key = rejected(admit("cirros", lab["id"], ssh_authorized_keys=["nope"]))
+    assert [f for f, _ in bad_key] == ["ssh_authorized_keys[0]"]
 
     # A network holds one kind of workload.
     nat = resources.network("nat")
