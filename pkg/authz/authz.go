@@ -22,6 +22,13 @@ const (
 	CoreProjectsRead   = "core.projects.read"
 	CoreProjectsCreate = "core.projects.create"
 	CoreProjectsDelete = "core.projects.delete"
+
+	CloudResourcesRead   = "cloud.resources.read"   // nodes, catalogue, networks, workloads, metrics
+	CloudWorkloadsManage = "cloud.workloads.manage" // create, start, stop, retry, delete workloads
+	CloudNetworksManage  = "cloud.networks.manage"  // create and delete networks
+	CloudNodesManage     = "cloud.nodes.manage"     // cordon, uncordon and remove nodes
+	CloudQuotasManage    = "cloud.quotas.manage"    // change project quotas
+	CloudAuditRead       = "cloud.audit.read"       // read and verify the cloud audit trail
 )
 
 //go:embed permissions.json

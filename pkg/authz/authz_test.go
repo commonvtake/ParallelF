@@ -43,8 +43,8 @@ func TestAllowedDeniesByDefault(t *testing.T) {
 }
 
 func TestPermissionsForIsSortedUnion(t *testing.T) {
-	got := PermissionsFor([]string{"viewer", "admin", "unknown"})
-	want := []string{"core.projects.create", "core.projects.delete", "core.projects.read", "system.status.read"}
+	got := PermissionsFor([]string{"viewer", "analyst", "unknown"})
+	want := []string{"cloud.audit.read", "cloud.resources.read", "core.projects.read", "system.status.read"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("PermissionsFor = %v, want %v", got, want)
 	}
@@ -80,5 +80,27 @@ func TestRequire(t *testing.T) {
 				t.Errorf("status = %d, want %d", rec.Code, tc.want)
 			}
 		})
+	}
+}
+
+func TestCloudRoleModel(t *testing.T) {
+	cases := map[string][]string{
+		CloudResourcesRead:   {"admin", "analyst", "lab-researcher", "operator", "owner", "viewer"},
+		CloudWorkloadsManage: {"admin", "operator", "owner"},
+		CloudNetworksManage:  {"admin", "operator", "owner"},
+		CloudNodesManage:     {"admin", "owner"},
+		CloudQuotasManage:    {"admin", "owner"},
+		CloudAuditRead:       {"admin", "analyst", "owner"},
+	}
+	for perm, want := range cases {
+		var got []string
+		for _, role := range Roles() {
+			if Allowed([]string{role}, perm) {
+				got = append(got, role)
+			}
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("%s granted to %v, want %v", perm, got, want)
+		}
 	}
 }

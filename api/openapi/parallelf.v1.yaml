@@ -21,6 +21,8 @@ tags:
     description: Platform-wide status
   - name: core
     description: Identity context and projects (pf-core)
+  - name: cloud
+    description: Nodes, networks, workloads, quotas and audit (pf-cloudd)
   - name: ai
     description: AI Investigator (pf-aid)
 security:
@@ -230,6 +232,602 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /api/v1/cloud/nodes:
+    get:
+      operationId: listNodes
+      tags: [cloud]
+      summary: List compute nodes
+      description: Nodes with their capacity, what is reserved on them, and health. Requires `cloud.resources.read`.
+      responses:
+        "200":
+          description: Every registered node.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NodeList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/cloud/nodes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    get:
+      operationId: getNode
+      tags: [cloud]
+      summary: Get a compute node
+      responses:
+        "200":
+          description: The node.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Node"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteNode
+      tags: [cloud]
+      summary: Remove a node that stopped reporting
+      description: |
+        Only a NOT_READY node without live workloads can be removed.
+        Requires `cloud.nodes.manage` and `confirm` equal to the node's name.
+      parameters:
+        - $ref: "#/components/parameters/Confirm"
+      responses:
+        "204":
+          description: The node was removed.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "428":
+          $ref: "#/components/responses/ConfirmationRequired"
+
+  /api/v1/cloud/nodes/{id}/metrics:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    get:
+      operationId: getNodeMetrics
+      tags: [cloud]
+      summary: Host utilisation samples
+      parameters:
+        - $ref: "#/components/parameters/MetricWindow"
+      responses:
+        "200":
+          description: Samples in the window, oldest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Metrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /api/v1/cloud/nodes/{id}/cordon:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    post:
+      operationId: cordonNode
+      tags: [cloud]
+      summary: Stop placing new workloads on a node
+      description: Requires `cloud.nodes.manage`. Running workloads are not affected.
+      responses:
+        "200":
+          description: The node.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Node"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cloud/nodes/{id}/uncordon:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    post:
+      operationId: uncordonNode
+      tags: [cloud]
+      summary: Allow placing workloads on a node again
+      description: Requires `cloud.nodes.manage`.
+      responses:
+        "200":
+          description: The node.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Node"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cloud/flavors:
+    get:
+      operationId: listFlavors
+      tags: [cloud]
+      summary: List workload sizes
+      responses:
+        "200":
+          description: Every flavor, smallest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlavorList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/cloud/templates:
+    get:
+      operationId: listTemplates
+      tags: [cloud]
+      summary: List provisioning templates
+      description: Every template version. Images are pinned by SHA-256 (VMs) or digest (containers).
+      responses:
+        "200":
+          description: Templates, newest version first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/cloud/networks:
+    get:
+      operationId: listNetworks
+      tags: [cloud]
+      summary: List virtual networks
+      parameters:
+        - $ref: "#/components/parameters/ProjectFilter"
+      responses:
+        "200":
+          description: Live networks.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    post:
+      operationId: createNetwork
+      tags: [cloud]
+      summary: Create a virtual network
+      description: |
+        Requires `cloud.networks.manage`. CIDRs come from 10.0.0.0/8 (except
+        10.255.0.0/16), between /16 and /27, and may not overlap a live network.
+        Records a `parallelf.cloud.v1.NetworkCreated` event.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NetworkCreate"
+      responses:
+        "201":
+          description: The network.
+          headers:
+            Location:
+              description: URL of the new network.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Network"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /api/v1/cloud/networks/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    get:
+      operationId: getNetwork
+      tags: [cloud]
+      summary: Get a network
+      responses:
+        "200":
+          description: The network, including a deleted one.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Network"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteNetwork
+      tags: [cloud]
+      summary: Delete a network
+      description: The network must have no workloads. Requires `cloud.networks.manage` and `confirm` equal to its name.
+      parameters:
+        - $ref: "#/components/parameters/Confirm"
+      responses:
+        "204":
+          description: The network was deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "428":
+          $ref: "#/components/responses/ConfirmationRequired"
+
+  /api/v1/cloud/workloads:
+    get:
+      operationId: listWorkloads
+      tags: [cloud]
+      summary: List workloads
+      description: Live workloads, newest first. Pass `state=DELETED` to list deleted ones.
+      parameters:
+        - $ref: "#/components/parameters/ProjectFilter"
+        - name: state
+          in: query
+          schema:
+            $ref: "#/components/schemas/WorkloadState"
+        - name: node_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Workloads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkloadList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    post:
+      operationId: createWorkload
+      tags: [cloud]
+      summary: Create a VM or container
+      description: |
+        Admits the workload (quota, address allocation) as PENDING; the
+        scheduler places it on a node and the node's agent provisions it.
+        Requires `cloud.workloads.manage`. Records a
+        `parallelf.cloud.v1.WorkloadCreated` event.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkloadCreate"
+      responses:
+        "201":
+          description: The admitted workload.
+          headers:
+            Location:
+              description: URL of the new workload.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workload"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /api/v1/cloud/workloads/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    get:
+      operationId: getWorkload
+      tags: [cloud]
+      summary: Get a workload
+      responses:
+        "200":
+          description: The workload, including a deleted one.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workload"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteWorkload
+      tags: [cloud]
+      summary: Delete a workload
+      description: |
+        Asynchronous: the workload becomes DELETING and then DELETED once its
+        node has removed it. Requires `cloud.workloads.manage` and `confirm`
+        equal to the workload's name.
+      parameters:
+        - $ref: "#/components/parameters/Confirm"
+      responses:
+        "202":
+          description: Deletion accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workload"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "428":
+          $ref: "#/components/responses/ConfirmationRequired"
+
+  /api/v1/cloud/workloads/{id}/start:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    post:
+      operationId: startWorkload
+      tags: [cloud]
+      summary: Start a stopped workload
+      responses:
+        "202":
+          $ref: "#/components/responses/WorkloadAccepted"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/cloud/workloads/{id}/stop:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    post:
+      operationId: stopWorkload
+      tags: [cloud]
+      summary: Stop a workload
+      description: VMs get an ACPI shutdown and are powered off if they have not stopped after 90 seconds.
+      responses:
+        "202":
+          $ref: "#/components/responses/WorkloadAccepted"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/cloud/workloads/{id}/retry:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    post:
+      operationId: retryWorkload
+      tags: [cloud]
+      summary: Retry a workload in ERROR
+      description: Starts a new generation, so the node agent makes a fresh set of attempts.
+      responses:
+        "202":
+          $ref: "#/components/responses/WorkloadAccepted"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/cloud/workloads/{id}/events:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    get:
+      operationId: listWorkloadEvents
+      tags: [cloud]
+      summary: A workload's history
+      responses:
+        "200":
+          description: Events, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkloadEventList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cloud/workloads/{id}/metrics:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    get:
+      operationId: getWorkloadMetrics
+      tags: [cloud]
+      summary: Workload utilisation samples
+      parameters:
+        - $ref: "#/components/parameters/MetricWindow"
+      responses:
+        "200":
+          description: Samples in the window, oldest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Metrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /api/v1/cloud/quotas/{project_id}:
+    parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getQuota
+      tags: [cloud]
+      summary: A project's quota and usage
+      responses:
+        "200":
+          description: Quota (the default when none was set) and current usage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuotaStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: putQuota
+      tags: [cloud]
+      summary: Set a project's quota
+      description: Requires `cloud.quotas.manage`. Lowering a quota below current usage blocks new workloads only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuotaUpdate"
+      responses:
+        "200":
+          description: The new quota and current usage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuotaStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /api/v1/cloud/audit:
+    get:
+      operationId: listCloudAudit
+      tags: [cloud]
+      summary: The cloud audit trail
+      description: Append-only, hash-chained record of every change. Newest first. Requires `cloud.audit.read`.
+      parameters:
+        - name: resource_type
+          in: query
+          schema:
+            type: string
+            enum: [node, network, workload, quota]
+        - name: resource_id
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: before
+          in: query
+          description: The `next_before` value of the previous page.
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: One page of entries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /api/v1/cloud/audit/verify:
+    get:
+      operationId: verifyCloudAudit
+      tags: [cloud]
+      summary: Recompute the audit hash chain
+      responses:
+        "200":
+          description: Whether every entry still matches its hash.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditVerification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -237,6 +835,35 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: OIDC access token with audience `parallelf-api`.
+
+  parameters:
+    ResourceID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Confirm:
+      name: confirm
+      in: query
+      required: true
+      description: The resource's name, repeated to confirm a destructive operation.
+      schema:
+        type: string
+    ProjectFilter:
+      name: project_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+    MetricWindow:
+      name: window
+      in: query
+      schema:
+        type: string
+        enum: ["15m", "1h", "6h", "24h"]
+        default: "1h"
 
   responses:
     BadRequest:
@@ -275,6 +902,18 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
+    ConfirmationRequired:
+      description: The `confirm` parameter is missing or does not match the resource's name.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    WorkloadAccepted:
+      description: Accepted; the node converges the workload asynchronously.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Workload"
 
   schemas:
     Health:
@@ -493,3 +1132,607 @@ components:
           type: string
         message:
           type: string
+
+    Resources:
+      type: object
+      additionalProperties: false
+      required: [vcpus, memory_mib, disk_gib]
+      properties:
+        vcpus:
+          type: integer
+        memory_mib:
+          type: integer
+        disk_gib:
+          type: integer
+
+    Node:
+      type: object
+      additionalProperties: false
+      required: [id, name, status, schedulable, agent_version, kvm, docker, hypervisor, cpu_count, memory_mib,
+        disk_gib, reserved_cpus, reserved_memory_mib, reserved_disk_gib, registered_at, last_seen_at,
+        allocatable, allocated, workloads]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [READY, NOT_READY]
+          description: NOT_READY once the agent has not synchronised for the node timeout (30 s by default).
+        schedulable:
+          type: boolean
+          description: false while cordoned.
+        agent_version:
+          type: string
+        kvm:
+          type: boolean
+          description: The node can run virtual machines.
+        docker:
+          type: boolean
+          description: The node can run containers.
+        hypervisor:
+          type: string
+          examples: ["libvirt 12.0.0, QEMU 10.2.1, Docker 29.4.2 (API 1.54)"]
+        cpu_count:
+          type: integer
+        memory_mib:
+          type: integer
+        disk_gib:
+          type: integer
+        reserved_cpus:
+          type: integer
+        reserved_memory_mib:
+          type: integer
+        reserved_disk_gib:
+          type: integer
+        registered_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+        allocatable:
+          $ref: "#/components/schemas/Resources"
+        allocated:
+          $ref: "#/components/schemas/Resources"
+        workloads:
+          type: integer
+          description: Live workloads placed on the node.
+
+    NodeList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Node"
+
+    MetricPoint:
+      type: object
+      additionalProperties: false
+      required: [at, cpu_percent, memory_used_mib]
+      properties:
+        at:
+          type: string
+          format: date-time
+        cpu_percent:
+          type: number
+          description: Host CPU busy time, or a workload's use of its own vCPUs.
+        memory_used_mib:
+          type: integer
+        memory_total_mib:
+          type: integer
+        disk_used_gib:
+          type: number
+        disk_total_gib:
+          type: number
+
+    Metrics:
+      type: object
+      additionalProperties: false
+      required: [window, points]
+      properties:
+        window:
+          type: string
+          enum: ["15m", "1h", "6h", "24h"]
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricPoint"
+
+    Flavor:
+      type: object
+      additionalProperties: false
+      required: [id, name, vcpus, memory_mib, disk_gib]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples: [pf.small]
+        vcpus:
+          type: integer
+        memory_mib:
+          type: integer
+        disk_gib:
+          type: integer
+
+    FlavorList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Flavor"
+
+    WorkloadKind:
+      type: string
+      enum: [vm, container]
+
+    Image:
+      type: object
+      additionalProperties: false
+      required: [id, name, kind, source, os]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        kind:
+          $ref: "#/components/schemas/WorkloadKind"
+        source:
+          type: string
+          description: https URL of a qcow2 image (VM) or a digest-pinned OCI reference (container).
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+          description: Checked by the node agent before a VM image is used.
+        os:
+          type: string
+
+    Template:
+      type: object
+      additionalProperties: false
+      required: [id, name, version, kind, description, image, default_flavor, static_network, deprecated]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples: [cirros]
+        version:
+          type: integer
+          minimum: 1
+        kind:
+          $ref: "#/components/schemas/WorkloadKind"
+        description:
+          type: string
+        image:
+          $ref: "#/components/schemas/Image"
+        default_flavor:
+          $ref: "#/components/schemas/Flavor"
+        cloud_config:
+          type: object
+          description: cloud-config merged into every VM's user-data.
+        static_network:
+          type: boolean
+          description: The guest configures its own address (required on lab networks).
+        command:
+          type: array
+          items:
+            type: string
+        cap_add:
+          type: array
+          items:
+            type: string
+        deprecated:
+          type: boolean
+
+    TemplateList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Template"
+
+    NetworkKind:
+      type: string
+      enum: [nat, isolated, lab]
+      description: |
+        nat: outbound internet through the host. isolated: no route off the
+        network. lab: isolated, no DHCP, and the host has no address on it.
+
+    Network:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, name, kind, cidr, bridge_name, created_by, created_at, workloads, capacity]
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        name:
+          $ref: "#/components/schemas/ResourceName"
+        kind:
+          $ref: "#/components/schemas/NetworkKind"
+        cidr:
+          type: string
+          examples: [10.20.1.0/24]
+        gateway_ip:
+          type: string
+          description: The host's address on the network. Absent on lab networks.
+        bridge_name:
+          type: string
+          pattern: "^pfbr-[0-9a-f]{8}$"
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+        workloads:
+          type: integer
+        capacity:
+          type: integer
+          description: Addresses available to workloads.
+
+    NetworkList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Network"
+
+    ResourceName:
+      type: string
+      pattern: "^[a-z][a-z0-9-]{1,38}[a-z0-9]$"
+      description: 3-40 characters; lower-case letters, digits and hyphens.
+
+    NetworkCreate:
+      type: object
+      additionalProperties: false
+      required: [project_id, name, kind, cidr]
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        name:
+          $ref: "#/components/schemas/ResourceName"
+        kind:
+          $ref: "#/components/schemas/NetworkKind"
+        cidr:
+          type: string
+          examples: [10.20.1.0/24]
+
+    WorkloadState:
+      type: string
+      enum: [PENDING, SCHEDULED, PROVISIONING, RUNNING, STOPPING, STOPPED, UNKNOWN, DELETING, DELETED, ERROR]
+
+    Workload:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, name, kind, template_id, template, template_version, flavor_id, flavor, network_id,
+        network, vcpus, memory_mib, disk_gib, ip, mac, desired_state, state, generation, observed_generation,
+        status_message, spec, created_by, created_at, updated_at, state_changed_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        name:
+          $ref: "#/components/schemas/ResourceName"
+        kind:
+          $ref: "#/components/schemas/WorkloadKind"
+        template_id:
+          type: string
+          format: uuid
+        template:
+          type: string
+        template_version:
+          type: integer
+        flavor_id:
+          type: string
+          format: uuid
+        flavor:
+          type: string
+        network_id:
+          type: string
+          format: uuid
+        network:
+          type: string
+        node_id:
+          type: string
+          format: uuid
+        node:
+          type: string
+        vcpus:
+          type: integer
+        memory_mib:
+          type: integer
+        disk_gib:
+          type: integer
+        ip:
+          type: string
+        mac:
+          type: string
+        desired_state:
+          type: string
+          enum: [running, stopped, deleted]
+        state:
+          $ref: "#/components/schemas/WorkloadState"
+        generation:
+          type: integer
+          description: Incremented by every requested change.
+        observed_generation:
+          type: integer
+          description: The newest generation the node has applied.
+        status_message:
+          type: string
+        spec:
+          type: object
+          additionalProperties: false
+          properties:
+            ssh_authorized_keys:
+              type: array
+              items:
+                type: string
+            env:
+              type: object
+              additionalProperties:
+                type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        state_changed_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+
+    WorkloadList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Workload"
+
+    WorkloadCreate:
+      type: object
+      additionalProperties: false
+      required: [project_id, name, template, network_id]
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        name:
+          $ref: "#/components/schemas/ResourceName"
+        template:
+          type: string
+          examples: [cirros]
+        template_version:
+          type: integer
+          minimum: 1
+          description: Defaults to the newest version that is not deprecated.
+        flavor:
+          type: string
+          description: Defaults to the template's default flavor.
+        network_id:
+          type: string
+          format: uuid
+        ssh_authorized_keys:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 4096
+        env:
+          type: object
+          maxProperties: 32
+          description: Container environment variables.
+          additionalProperties:
+            type: string
+            maxLength: 4096
+
+    WorkloadEvent:
+      type: object
+      additionalProperties: false
+      required: [id, at, type, message]
+      properties:
+        id:
+          type: integer
+        at:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [created, request, state, status]
+        message:
+          type: string
+
+    WorkloadEventList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkloadEvent"
+
+    Quota:
+      type: object
+      additionalProperties: false
+      required: [project_id, max_vcpus, max_memory_mib, max_disk_gib, max_workloads, is_default]
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        max_vcpus:
+          type: integer
+        max_memory_mib:
+          type: integer
+        max_disk_gib:
+          type: integer
+        max_workloads:
+          type: integer
+        is_default:
+          type: boolean
+          description: true when the project uses the platform default.
+        updated_by:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+
+    Usage:
+      type: object
+      additionalProperties: false
+      required: [vcpus, memory_mib, disk_gib, workloads]
+      properties:
+        vcpus:
+          type: integer
+        memory_mib:
+          type: integer
+        disk_gib:
+          type: integer
+        workloads:
+          type: integer
+
+    QuotaStatus:
+      type: object
+      additionalProperties: false
+      required: [quota, usage]
+      properties:
+        quota:
+          $ref: "#/components/schemas/Quota"
+        usage:
+          $ref: "#/components/schemas/Usage"
+
+    QuotaUpdate:
+      type: object
+      additionalProperties: false
+      required: [max_vcpus, max_memory_mib, max_disk_gib, max_workloads]
+      properties:
+        max_vcpus:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        max_memory_mib:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        max_disk_gib:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        max_workloads:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+
+    AuditEntry:
+      type: object
+      additionalProperties: false
+      required: [seq, id, at, actor_type, actor_id, actor_name, action, resource_type, resource_id, outcome,
+        request_id, details, prev_hash, hash]
+      properties:
+        seq:
+          type: integer
+        id:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+        actor_type:
+          type: string
+          enum: [user, agent, system]
+        actor_id:
+          type: string
+        actor_name:
+          type: string
+        action:
+          type: string
+          examples: [cloud.workloads.delete]
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        project_id:
+          type: string
+          format: uuid
+        outcome:
+          type: string
+          enum: [success, denied, failed]
+        request_id:
+          type: string
+        details:
+          type: object
+          additionalProperties:
+            type: string
+        prev_hash:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        hash:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+          description: sha256 of prev_hash and the entry's canonical encoding.
+
+    AuditPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEntry"
+        next_before:
+          type: integer
+          description: Present when older entries exist. Pass it as `before`.
+
+    AuditVerification:
+      type: object
+      additionalProperties: false
+      required: [valid, entries, checked_at]
+      properties:
+        valid:
+          type: boolean
+        entries:
+          type: integer
+        first_invalid_seq:
+          type: integer
+          description: The first entry whose hash does not match. Absent when valid.
+        checked_at:
+          type: string
+          format: date-time

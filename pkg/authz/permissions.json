@@ -1,10 +1,38 @@
 {
   "roles": {
-    "owner": ["system.status.read", "core.projects.read", "core.projects.create", "core.projects.delete"],
-    "admin": ["system.status.read", "core.projects.read", "core.projects.create", "core.projects.delete"],
-    "operator": ["system.status.read", "core.projects.read"],
-    "analyst": ["system.status.read", "core.projects.read"],
-    "lab-researcher": ["system.status.read", "core.projects.read"],
-    "viewer": ["system.status.read", "core.projects.read"]
+    "owner": [
+      "system.status.read",
+      "core.projects.read",
+      "core.projects.create",
+      "core.projects.delete",
+      "cloud.resources.read",
+      "cloud.workloads.manage",
+      "cloud.networks.manage",
+      "cloud.nodes.manage",
+      "cloud.quotas.manage",
+      "cloud.audit.read"
+    ],
+    "admin": [
+      "system.status.read",
+      "core.projects.read",
+      "core.projects.create",
+      "core.projects.delete",
+      "cloud.resources.read",
+      "cloud.workloads.manage",
+      "cloud.networks.manage",
+      "cloud.nodes.manage",
+      "cloud.quotas.manage",
+      "cloud.audit.read"
+    ],
+    "operator": [
+      "system.status.read",
+      "core.projects.read",
+      "cloud.resources.read",
+      "cloud.workloads.manage",
+      "cloud.networks.manage"
+    ],
+    "analyst": ["system.status.read", "core.projects.read", "cloud.resources.read", "cloud.audit.read"],
+    "lab-researcher": ["system.status.read", "core.projects.read", "cloud.resources.read"],
+    "viewer": ["system.status.read", "core.projects.read", "cloud.resources.read"]
   }
 }

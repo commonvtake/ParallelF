@@ -95,3 +95,11 @@ func TestSecretPrefersEnvThenFile(t *testing.T) {
 		t.Error("Err = nil for unreadable secret file")
 	}
 }
+
+func TestInvalidIsReported(t *testing.T) {
+	l := FromMap(map[string]string{})
+	l.Invalid("PF_X", "must be %d characters", 24)
+	if err := l.Err(); err == nil || !strings.Contains(err.Error(), "PF_X: must be 24 characters") {
+		t.Fatalf("got %v", err)
+	}
+}
