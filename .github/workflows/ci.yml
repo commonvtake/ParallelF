@@ -126,20 +126,28 @@ jobs:
           PF_TEST_DATABASE_URL: postgres://pf_core:ci-runtime-password@localhost:5432/parallelf?sslmode=disable
           PF_TEST_CLOUD_DATABASE_URL: postgres://pf_cloud:ci-cloud-runtime-password@localhost:5432/parallelf?sslmode=disable
           PF_TEST_ADMIN_DATABASE_URL: postgres://postgres:ci-postgres-password@localhost:5432/parallelf?sslmode=disable
-        run: go test -race -count=1 -coverprofile=coverage.out ./...
+        run: |
+          status=0
+          go test -race -count=1 -coverprofile=coverage.out -v ./... > go-test.log 2>&1 || status=$?
+          grep -E "^(--- FAIL|FAIL|ok|panic)|_test.go:[0-9]+:" go-test.log || true
+          exit $status
 
       - name: Fail if PostgreSQL integration tests were skipped
+        run: |
+          if grep -qE -- "--- SKIP|skipping the tamper" go-test.log; then
+            grep -E -- "--- SKIP|skipping" go-test.log
+            echo "::error::store integration tests were skipped"
+            exit 1
+          fi
+
+      # The store tests share one database with every earlier run, as on a
+      # developer's machine: running them again must still pass.
+      - name: Store tests are repeatable
         env:
           PF_TEST_DATABASE_URL: postgres://pf_core:ci-runtime-password@localhost:5432/parallelf?sslmode=disable
           PF_TEST_CLOUD_DATABASE_URL: postgres://pf_cloud:ci-cloud-runtime-password@localhost:5432/parallelf?sslmode=disable
           PF_TEST_ADMIN_DATABASE_URL: postgres://postgres:ci-postgres-password@localhost:5432/parallelf?sslmode=disable
-        run: |
-          out=$(go test -count=1 -v ./services/core/internal/store/... ./services/cloud/internal/store/...)
-          echo "$out" | grep -E "^(=== RUN|--- (PASS|FAIL|SKIP)|ok|FAIL)|skipping" || true
-          if echo "$out" | grep -qE -- "--- SKIP|skipping the tamper"; then
-            echo "::error::store integration tests were skipped"
-            exit 1
-          fi
+        run: go test -count=1 ./services/core/internal/store/... ./services/cloud/internal/store/...
 
       - name: Coverage summary
         run: go tool cover -func=coverage.out | tail -n 1

@@ -48,7 +48,8 @@ test("an owner creates a network and a container, watches it and deletes both", 
 
     await page.getByRole("navigation", { name: "Cloud" }).getByRole("link", { name: "Networks" }).click();
     await expect(page).toHaveURL(/\/cloud\/networks$/);
-    await page.getByLabel("Project").selectOption(projectId);
+    // Selects are found by field name: a select's accessible name includes its chosen option.
+    await page.locator('select[name="project_id"]').selectOption(projectId);
     await page.getByLabel("Network name").fill(networkName);
     await page.getByLabel("CIDR").fill(cidr());
     await page.getByRole("button", { name: "Create network" }).click();
@@ -56,11 +57,11 @@ test("an owner creates a network and a container, watches it and deletes both", 
     await expect(row).toContainText("nat");
 
     await page.goto("/cloud/workloads");
-    await page.getByLabel("Project").selectOption(projectId);
+    await page.locator('select[name="project_id"]').selectOption(projectId);
     await page.getByLabel("Name", { exact: true }).fill(workloadName);
-    await page.getByLabel("Template").selectOption("alpine-sleeper");
+    await page.locator('select[name="template"]').selectOption("alpine-sleeper");
     // The project's only network is preselected.
-    await expect(page.getByLabel("Network", { exact: true })).toContainText(networkName);
+    await expect(page.locator('select[name="network_id"]')).toContainText(networkName);
     await page.getByRole("button", { name: "Create workload" }).click();
 
     await expect(page).toHaveURL(/\/cloud\/workloads\/[0-9a-f-]{36}$/);
