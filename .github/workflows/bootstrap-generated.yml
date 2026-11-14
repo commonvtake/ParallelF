@@ -11,36 +11,13 @@ permissions:
   contents: write
 
 jobs:
-  # Downloads the VM base images from their official hosts and prints their
-  # SHA-256, so the seed migration can pin them.
-  image-checksums:
+  # Boots a guest with the libvirt layout the node agent generates.
+  kvm-probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - name: CirrOS 0.6.2
-        run: |
-          base=https://download.cirros-cloud.net/0.6.2
-          curl -fsSLO "$base/cirros-0.6.2-x86_64-disk.img"
-          echo "computed:"; sha256sum cirros-0.6.2-x86_64-disk.img
-          echo "published SHA256SUMS:"; curl -sSL "$base/SHA256SUMS" | grep -i x86_64 || echo "(none)"
-          echo "published MD5SUMS:"; curl -sSL "$base/MD5SUMS" | grep -i x86_64 || echo "(none)"
-          echo "computed md5:"; md5sum cirros-0.6.2-x86_64-disk.img
-          stat -c 'size %s bytes' cirros-0.6.2-x86_64-disk.img
-          sudo apt-get update -qq && sudo apt-get install -y -qq qemu-utils >/dev/null && qemu-img info cirros-0.6.2-x86_64-disk.img
-      - name: Ubuntu 24.04 (latest dated release)
-        run: |
-          index=https://cloud-images.ubuntu.com/releases/noble/
-          release=$(curl -fsSL "$index" | grep -o 'release-[0-9]\{8\}' | sort -u | tail -1)
-          echo "release=$release"
-          base="$index$release"
-          curl -fsSL "$base/SHA256SUMS" | grep 'ubuntu-24.04-server-cloudimg-amd64.img$'
-          curl -fsSLO "$base/ubuntu-24.04-server-cloudimg-amd64.img"
-          echo "computed:"; sha256sum ubuntu-24.04-server-cloudimg-amd64.img
-          stat -c 'size %s bytes' ubuntu-24.04-server-cloudimg-amd64.img
-          qemu-img info ubuntu-24.04-server-cloudimg-amd64.img
-      - name: KVM availability on this runner
-        if: always()
-        run: ls -l /dev/kvm || echo "no /dev/kvm"
+      - uses: actions/checkout@v6
+      - run: .github/probe/kvm-probe.sh
 
   generate:
     runs-on: ubuntu-latest
