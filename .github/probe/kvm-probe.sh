@@ -8,7 +8,7 @@ sudo apt-get install -y -qq --no-install-recommends libvirt-daemon-system libvir
 echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
 ls -l /dev/kvm
-virsh -c qemu:///system version
+sudo virsh -c qemu:///system version
 dpkg -l | grep -E "^ii  (libvirt-daemon |qemu-system-x86 |genisoimage )" | awk '{print $2, $3}'
 
 D=/var/lib/parallelf/cloud
@@ -36,10 +36,10 @@ cat > $tmp/nat.xml <<'XML'
   </ip>
 </network>
 XML
-virsh -c qemu:///system net-define $tmp/nat.xml
-virsh -c qemu:///system net-start pfbr-probe001
-virsh -c qemu:///system net-update pfbr-probe001 add ip-dhcp-host '<host mac="52:54:00:aa:bb:01" name="probe" ip="10.42.0.2"/>' --live --config
-virsh -c qemu:///system net-dumpxml pfbr-probe001
+sudo virsh -c qemu:///system net-define $tmp/nat.xml
+sudo virsh -c qemu:///system net-start pfbr-probe001
+sudo virsh -c qemu:///system net-update pfbr-probe001 add ip-dhcp-host '<host mac="52:54:00:aa:bb:01" name="probe" ip="10.42.0.2"/>' --live --config
+sudo virsh -c qemu:///system net-dumpxml pfbr-probe001
 
 cat > $tmp/lab.xml <<'XML'
 <network>
@@ -47,10 +47,10 @@ cat > $tmp/lab.xml <<'XML'
   <bridge name="pfbr-probe002" stp="on" delay="0"/>
 </network>
 XML
-virsh -c qemu:///system net-define $tmp/lab.xml
-virsh -c qemu:///system net-start pfbr-probe002
+sudo virsh -c qemu:///system net-define $tmp/lab.xml
+sudo virsh -c qemu:///system net-start pfbr-probe002
 ip -br addr show pfbr-probe002
-virsh -c qemu:///system net-dumpxml pfbr-probe002
+sudo virsh -c qemu:///system net-dumpxml pfbr-probe002
 
 cat > $tmp/dom.xml <<XML
 <domain type="kvm">
@@ -74,21 +74,21 @@ cat > $tmp/dom.xml <<XML
   </devices>
 </domain>
 XML
-virsh -c qemu:///system define $tmp/dom.xml
-virsh -c qemu:///system start pf-00000000-0000-7000-8000-000000000001
+sudo virsh -c qemu:///system define $tmp/dom.xml
+sudo virsh -c qemu:///system start pf-00000000-0000-7000-8000-000000000001
 start=$(date +%s)
 for i in $(seq 1 60); do
   if ping -c1 -W1 10.42.0.2 >/dev/null 2>&1; then echo "PING OK after $(( $(date +%s) - start ))s"; break; fi
   sleep 3
 done
-virsh -c qemu:///system domstate pf-00000000-0000-7000-8000-000000000001
-virsh -c qemu:///system net-dhcp-leases pfbr-probe001 || true
-virsh -c qemu:///system domstats --raw --cpu-total --balloon pf-00000000-0000-7000-8000-000000000001
-virsh -c qemu:///system list --all --name
-virsh -c qemu:///system net-list --all --name
+sudo virsh -c qemu:///system domstate pf-00000000-0000-7000-8000-000000000001
+sudo virsh -c qemu:///system net-dhcp-leases pfbr-probe001 || true
+sudo virsh -c qemu:///system domstats --raw --cpu-total --balloon pf-00000000-0000-7000-8000-000000000001
+sudo virsh -c qemu:///system list --all --name
+sudo virsh -c qemu:///system net-list --all --name
 sudo tail -c 3000 $D/instances/probe/console.log || true
-virsh -c qemu:///system shutdown pf-00000000-0000-7000-8000-000000000001
-for i in $(seq 1 20); do s=$(virsh -c qemu:///system domstate pf-00000000-0000-7000-8000-000000000001); echo "$i $s"; [ "$s" = "shut off" ] && break; sleep 3; done
+sudo virsh -c qemu:///system shutdown pf-00000000-0000-7000-8000-000000000001
+for i in $(seq 1 20); do s=$(sudo virsh -c qemu:///system domstate pf-00000000-0000-7000-8000-000000000001); echo "$i $s"; [ "$s" = "shut off" ] && break; sleep 3; done
 nproc; grep -E "MemTotal|MemAvailable" /proc/meminfo; df -h /var/lib
 
 echo "--- container digests"
