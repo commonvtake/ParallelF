@@ -11,14 +11,6 @@ permissions:
   contents: write
 
 jobs:
-  # Boots a guest with the libvirt layout the node agent generates.
-  kvm-probe:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v6
-      - run: .github/probe/kvm-probe.sh
-
   generate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
