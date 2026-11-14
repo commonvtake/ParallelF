@@ -3,23 +3,9 @@
 // They sign in through the real identity provider with the development
 // users defined in deploy/keycloak/realm/parallelf-realm.json.
 
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-const OWNER = { username: "owner", password: process.env.PF_DEV_OWNER_PASSWORD ?? "" };
-const VIEWER = { username: "viewer", password: process.env.PF_DEV_VIEWER_PASSWORD ?? "" };
-
-async function signIn(page: Page, user: { username: string; password: string }): Promise<void> {
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/login$/);
-  await page.getByRole("link", { name: "Sign in" }).click();
-
-  // Keycloak's login form.
-  await page.locator("#username").fill(user.username);
-  await page.locator("#password").fill(user.password);
-  await page.locator("#kc-login").click();
-
-  await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
-}
+import { OWNER, signIn, VIEWER } from "./auth";
 
 test.beforeAll(() => {
   expect(OWNER.password, "PF_DEV_OWNER_PASSWORD must be set (it is defined in .env)").not.toBe("");
@@ -37,7 +23,16 @@ test("the overview shows live platform status after signing in", async ({ page }
   await signIn(page, OWNER);
 
   await expect(page.getByText("All components operational")).toBeVisible();
-  for (const name of ["pf-gateway", "core", "postgres", "ai", "identity-provider"]) {
+  const components = [
+    "pf-gateway",
+    "core",
+    "cloud",
+    "ai",
+    "identity-provider",
+    "core-postgres",
+    "cloud-postgres",
+  ];
+  for (const name of components) {
     await expect(page.getByTestId(`component-${name}`)).toContainText("Operational");
   }
 });
@@ -65,7 +60,7 @@ test("every section is reachable and unbuilt sections say so", async ({ page }) 
   const nav = page.getByRole("navigation", { name: "Sections" });
 
   const sections = [
-    { label: "Cloud", path: "/cloud", implemented: false },
+    { label: "Cloud", path: "/cloud", implemented: true },
     { label: "VPN", path: "/vpn", implemented: false },
     { label: "Network Monitoring", path: "/network", implemented: false },
     { label: "Security Lab", path: "/lab", implemented: false },

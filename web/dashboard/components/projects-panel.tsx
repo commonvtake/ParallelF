@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState, useTransition } from "react";
 
-import { describeProblem, parseProblem } from "@/lib/api/problem";
+import { failureMessage } from "@/lib/api/browser";
 import type { Project } from "@/lib/api/types";
 import { formatTimestamp } from "@/lib/format";
 
@@ -11,12 +11,6 @@ interface Props {
   projects: readonly Project[];
   canCreate: boolean;
   canDelete: boolean;
-}
-
-async function failureMessage(response: Response): Promise<string> {
-  if (response.status === 401) return "Your session has ended. Reload the page and sign in again.";
-  const body: unknown = await response.json().catch(() => null);
-  return describeProblem(parseProblem(response.status, body));
 }
 
 /** Lists projects and, when the caller's role allows, creates and deletes them. */

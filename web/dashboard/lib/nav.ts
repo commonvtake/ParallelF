@@ -20,7 +20,7 @@ export const SECTIONS: readonly Section[] = [
   {
     href: "/cloud",
     label: "Cloud",
-    status: "not-implemented",
+    status: "available",
     summary: "Virtual machines, containers, scheduling and virtual networks.",
   },
   {
