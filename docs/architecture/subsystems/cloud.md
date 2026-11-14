@@ -1,5 +1,7 @@
 # ParallelF Cloud — Mini IaaS + Container Platform
 
+> **Implementation status (Phase 2).** The resource model, lifecycle, scheduler, IPAM, quotas, level-triggered reconciliation, audit log and outbox events below are implemented for one host; the operator guide is [docs/cloud.md](../../cloud.md). Phase 2 departs from this design in four places, recorded in [ADR-0013](../../adr/0013-cloud-phase-2-agent-protocol-and-runtimes.md): agents sync over HTTP instead of NATS, runtimes are driven through `virsh`/`qemu-img` and the Docker Engine API instead of client libraries, each network belongs to one runtime (libvirt or Docker) instead of a shared CNI bridge with an agent-owned nftables table, and images are fetched by the agent from pinned URLs instead of an import API. Operations, volumes, labels/taints, image-locality scoring and VXLAN are not built yet.
+
 ## 1. Goals
 
 - Run **VMs** (KVM via libvirt) and **containers** (Docker Engine) through a single workload API.
