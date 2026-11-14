@@ -486,10 +486,19 @@ func (s *Postgres) Schedule(ctx context.Context, workloadID string) (scheduler.R
 		if w.State != domain.StatePending || w.DeletedAt != nil {
 			return nil
 		}
-		rows, err := tx.Query(ctx, `SELECT `+nodeColumns+`, `+allocationColumns+` FROM cloud.nodes n`+allocationJoin+
-			` ORDER BY n.id FOR UPDATE OF n`)
-		if err != nil {
+		// Lock every node first, in a statement of its own. Binding holds
+		// these locks until commit, so once they are ours every earlier
+		// placement has committed; the allocation query below then runs on
+		// a fresh snapshot that includes them. (Computing the allocation in
+		// the locking statement would use the snapshot from before the
+		// wait, and concurrent placements could overcommit a node.)
+		if _, err := tx.Exec(ctx, `SELECT 1 FROM cloud.nodes ORDER BY id FOR UPDATE`); err != nil {
 			return fmt.Errorf("lock nodes: %w", err)
+		}
+		rows, err := tx.Query(ctx, `SELECT `+nodeColumns+`, `+allocationColumns+` FROM cloud.nodes n`+allocationJoin+
+			` ORDER BY n.id`)
+		if err != nil {
+			return fmt.Errorf("read nodes: %w", err)
 		}
 		var candidates []scheduler.Candidate
 		for rows.Next() {

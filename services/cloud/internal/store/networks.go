@@ -78,9 +78,24 @@ func (s *Postgres) CreateNetwork(ctx context.Context, in domain.NetworkInput, ac
 	return created, err
 }
 
-// lockNetwork locks a live network row.
+// lockLiveNetwork locks a live network row and then reads it, with its
+// workload count, in a new statement: a count read by the locking statement
+// itself would come from the snapshot taken before waiting for the lock, and
+// miss workloads a concurrent transaction just added.
+func (s *Postgres) lockLiveNetwork(ctx context.Context, tx pgx.Tx, id string) (domain.Network, error) {
+	tag, err := tx.Exec(ctx, `SELECT 1 FROM cloud.networks WHERE id = $1::text::uuid AND deleted_at IS NULL FOR UPDATE`, id)
+	if err != nil {
+		return domain.Network{}, fmt.Errorf("lock network: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.Network{}, domain.ErrNotFound
+	}
+	return scanNetwork(tx.QueryRow(ctx, networkSelect+` WHERE n.id = $1::text::uuid`, id))
+}
+
+// lockNetwork locks a live network for admitting a workload to it.
 func (s *Postgres) lockNetwork(ctx context.Context, tx pgx.Tx, id string) (domain.Network, error) {
-	n, err := scanNetwork(tx.QueryRow(ctx, networkSelect+` WHERE n.id = $1::text::uuid AND n.deleted_at IS NULL FOR UPDATE OF n`, id))
+	n, err := s.lockLiveNetwork(ctx, tx, id)
 	if errors.Is(err, domain.ErrNotFound) {
 		return domain.Network{}, &domain.ValidationError{Field: "network_id", Code: "not_found", Message: "No network has this id."}
 	}
@@ -116,7 +131,7 @@ func (s *Postgres) ListNetworks(ctx context.Context, projectID string) ([]domain
 // the bridge on their next sync, because it is no longer desired.
 func (s *Postgres) DeleteNetwork(ctx context.Context, id string, actor domain.Actor) error {
 	return s.inTx(ctx, func(tx pgx.Tx) error {
-		n, err := scanNetwork(tx.QueryRow(ctx, networkSelect+` WHERE n.id = $1::text::uuid AND n.deleted_at IS NULL FOR UPDATE OF n`, id))
+		n, err := s.lockLiveNetwork(ctx, tx, id)
 		if err != nil {
 			return err
 		}
