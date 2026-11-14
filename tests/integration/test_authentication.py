@@ -80,4 +80,4 @@ def test_viewer_profile_has_read_permissions_only(
     me = response.json()
     contract("Me", me)
     assert me["roles"] == ["viewer"]
-    assert me["permissions"] == ["core.projects.read", "system.status.read"]
+    assert me["permissions"] == ["cloud.resources.read", "core.projects.read", "system.status.read"]
