@@ -27,6 +27,12 @@ def _sudo(argv: list[str]) -> list[str]:
 def run(
     *argv: str, stdin: str | None = None, check: bool = True
 ) -> subprocess.CompletedProcess[str]:
+    if stdin is not None:
+        # wg opens /dev/stdin, which must then be a pipe that root owns:
+        # Ubuntu's AppArmor profile for wg denies it dac_override, so a pipe
+        # from an unprivileged caller (through sudo) cannot be reopened.
+        # `cat` re-pipes the input as root.
+        argv = ("sh", "-c", 'cat | "$@"', "sh", *argv)
     result = subprocess.run(
         _sudo(list(argv)), input=stdin, capture_output=True, text=True, timeout=60, check=False
     )
