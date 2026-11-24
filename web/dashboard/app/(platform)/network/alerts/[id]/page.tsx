@@ -29,7 +29,10 @@ export default async function AlertPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <PageHeader title="Network Monitoring" summary="One alert: what fired, who was involved and the telemetry behind it." />
+      <PageHeader
+        title="Network Monitoring"
+        summary="One alert: what fired, who was involved and the telemetry behind it."
+      />
       <SectionTabs label="Network Monitoring" tabs={NETWORK_TABS} current="/network" />
       {!alert.ok ? (
         <ApiError what="the alert" status={alert.status} problem={alert.problem} />
@@ -40,14 +43,19 @@ export default async function AlertPage({ params }: { params: Promise<{ id: stri
               <div>
                 <dt className="text-xs text-slate-500">Detector</dt>
                 <dd>
-                  {detectorLabel(alert.data.detector)} <span className="font-mono text-xs">{alert.data.rule_id}</span>
+                  {detectorLabel(alert.data.detector)}{" "}
+                  <span className="font-mono text-xs">{alert.data.rule_id}</span>
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-slate-500">State</dt>
                 <dd className="flex flex-wrap gap-1">
-                  <StatusBadge tone={severityTone(alert.data.severity)}>{stateLabel(alert.data.severity)}</StatusBadge>
-                  <StatusBadge tone={alertStatusTone(alert.data.status)}>{stateLabel(alert.data.status)}</StatusBadge>
+                  <StatusBadge tone={severityTone(alert.data.severity)}>
+                    {stateLabel(alert.data.severity)}
+                  </StatusBadge>
+                  <StatusBadge tone={alertStatusTone(alert.data.status)}>
+                    {stateLabel(alert.data.status)}
+                  </StatusBadge>
                 </dd>
               </div>
               <div>

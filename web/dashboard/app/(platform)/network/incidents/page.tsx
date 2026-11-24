@@ -42,15 +42,18 @@ export default async function IncidentsPage() {
               {incidents.data.items.map((i) => (
                 <li key={i.id} data-testid={`incident-${i.id}`} className="py-3 text-sm">
                   <span className="flex flex-wrap items-center gap-2">
-                    <Link href={`/network/incidents/${i.id}`} className="font-medium text-slate-900 hover:underline">
+                    <Link
+                      href={`/network/incidents/${i.id}`}
+                      className="font-medium text-slate-900 hover:underline"
+                    >
                       {i.title}
                     </Link>
                     <StatusBadge tone={severityTone(i.severity)}>{stateLabel(i.severity)}</StatusBadge>
                     <StatusBadge tone={incidentStatusTone(i.status)}>{stateLabel(i.status)}</StatusBadge>
                   </span>
                   <span className="block text-xs text-slate-500">
-                    {i.alert_count} alerts · opened by {i.created_by} {formatTimestamp(i.created_at)} · updated{" "}
-                    {formatTimestamp(i.updated_at)}
+                    {i.alert_count} alerts · opened by {i.created_by} {formatTimestamp(i.created_at)} ·
+                    updated {formatTimestamp(i.updated_at)}
                   </span>
                 </li>
               ))}

@@ -418,6 +418,376 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/network/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * NetGuard at a glance
+         * @description Requires `network.resources.read`.
+         */
+        get: operations["getNetworkOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/sensors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List sensors */
+        get: operations["listNetworkSensors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/sensors/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a silent sensor
+         * @description Requires `network.sensors.manage` and `confirm` equal to its name. Its telemetry is deleted with it.
+         */
+        delete: operations["deleteNetworkSensor"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List telemetry
+         * @description Newest first.
+         */
+        get: operations["listNetworkEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        /** Get an event */
+        get: operations["getNetworkEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List assets
+         * @description Every address seen on a monitored network, with who holds it now.
+         */
+        get: operations["listNetworkAssets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List alerts
+         * @description Most recently seen first.
+         */
+        get: operations["listNetworkAlerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/alerts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** Get an alert with its telemetry */
+        get: operations["getNetworkAlert"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/alerts/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge, close, suppress or reopen an alert
+         * @description Requires `network.alerts.triage`. Suppression needs a reason and lasts at most 720h.
+         */
+        post: operations["changeNetworkAlertStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List incidents */
+        get: operations["listNetworkIncidents"];
+        put?: never;
+        /**
+         * Open an incident
+         * @description Requires `network.alerts.triage`.
+         */
+        post: operations["createNetworkIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/incidents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** Get an incident with its alerts, timeline and evidence */
+        get: operations["getNetworkIncident"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change status, add a note or link alerts
+         * @description Requires `network.alerts.triage`.
+         */
+        patch: operations["updateNetworkIncident"];
+        trace?: never;
+    };
+    "/api/v1/network/incidents/{id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add evidence
+         * @description Requires `network.alerts.triage`. Events and alerts are captured by the server; their SHA-256 is recorded and the item can never change.
+         */
+        post: operations["addNetworkEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/incidents/{id}/verify-evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** Recompute every evidence digest of an incident */
+        get: operations["verifyNetworkEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/incidents/{id}/evidence/{eid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+                eid: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Download an evidence item
+         * @description Served as an attachment with its recorded digest in `X-Content-SHA256`.
+         */
+        get: operations["getNetworkEvidenceContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/scopes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List discovery scopes */
+        get: operations["listNetworkScopes"];
+        put?: never;
+        /**
+         * Issue a signed discovery scope
+         * @description Requires `network.scopes.manage` and a recent sign-in. Ranges must lie inside ParallelF's networks; the sensor re-checks the guards (private ranges, at most /22, ICMP echo and TCP connect only, at most 100 probes per second).
+         */
+        post: operations["issueNetworkScope"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/scopes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a discovery scope
+         * @description Requires `network.scopes.manage` and `confirm` equal to its name.
+         */
+        delete: operations["revokeNetworkScope"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the NetGuard audit trail
+         * @description Newest first. Requires `network.audit.read`.
+         */
+        get: operations["listNetworkAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/network/audit/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verify the NetGuard audit chain
+         * @description Requires `network.audit.read`.
+         */
+        get: operations["verifyNetworkAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/info": {
         parameters: {
             query?: never;
@@ -1377,6 +1747,299 @@ export interface components {
             window: "15m" | "1h" | "6h" | "24h";
             points: components["schemas"]["VPNTrafficPoint"][];
         };
+        NetworkOverview: {
+            sensors: number;
+            sensors_reporting: number;
+            events_24h: number;
+            events_by_kind_1h: {
+                [key: string]: number;
+            };
+            open_alerts_by_severity: {
+                [key: string]: number;
+            };
+            open_incidents: number;
+            assets: number;
+            unattributed_assets: number;
+            active_scopes: number;
+        };
+        NetworkSensor: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @enum {string} */
+            status: "reporting" | "silent";
+            agent_version: string;
+            engine: string;
+            interfaces: string[];
+            engine_error: string;
+            events_total: number;
+            /** Format: date-time */
+            registered_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+        };
+        NetworkSensorList: {
+            items: components["schemas"]["NetworkSensor"][];
+        };
+        NetworkEvent: {
+            id: number;
+            /** Format: uuid */
+            sensor_id: string;
+            /** Format: date-time */
+            ts: string;
+            /** @enum {string} */
+            kind: "flow" | "dns" | "http" | "tls" | "alert" | "anomaly" | "discovery";
+            iface: string;
+            src_ip?: string;
+            src_port?: number;
+            dst_ip?: string;
+            dst_port?: number;
+            proto?: string;
+            community_id?: string;
+            app_proto?: string;
+            details: {
+                [key: string]: string;
+            };
+            /** @description SHA-256 of the sensor's source line. */
+            raw_sha256: string;
+        };
+        NetworkEventPage: {
+            items: components["schemas"]["NetworkEvent"][];
+            next_before?: number;
+        };
+        NetworkParty: {
+            ip: string;
+            /** @enum {string} */
+            kind: "workload" | "vpn_device" | "network_gateway" | "infrastructure" | "unknown";
+            entity_id?: string;
+            name?: string;
+            project_id?: string;
+            owner_subject?: string;
+        };
+        NetworkAttribution: {
+            source?: components["schemas"]["NetworkParty"];
+            destination?: components["schemas"]["NetworkParty"];
+        };
+        NetworkAlert: {
+            /** Format: uuid */
+            id: string;
+            detector: string;
+            rule_id: string;
+            /** @enum {string} */
+            severity: "info" | "low" | "medium" | "high" | "critical";
+            title: string;
+            src_ip?: string;
+            dst_ip?: string;
+            /** @enum {string} */
+            status: "open" | "acknowledged" | "closed" | "suppressed";
+            count: number;
+            /** Format: date-time */
+            first_seen_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+            first_event_id?: number;
+            last_event_id?: number;
+            details: {
+                [key: string]: string;
+            };
+            attribution: components["schemas"]["NetworkAttribution"];
+            incident_id?: string;
+            status_reason?: string;
+            status_by?: string;
+            /** Format: date-time */
+            suppressed_until?: string;
+        };
+        NetworkAlertList: {
+            items: components["schemas"]["NetworkAlert"][];
+        };
+        NetworkAlertDetail: {
+            /** Format: uuid */
+            id: string;
+            detector: string;
+            rule_id: string;
+            /** @enum {string} */
+            severity: "info" | "low" | "medium" | "high" | "critical";
+            title: string;
+            src_ip?: string;
+            dst_ip?: string;
+            /** @enum {string} */
+            status: "open" | "acknowledged" | "closed" | "suppressed";
+            count: number;
+            /** Format: date-time */
+            first_seen_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+            first_event_id?: number;
+            last_event_id?: number;
+            details: {
+                [key: string]: string;
+            };
+            attribution: components["schemas"]["NetworkAttribution"];
+            incident_id?: string;
+            status_reason?: string;
+            status_by?: string;
+            /** Format: date-time */
+            suppressed_until?: string;
+            events: components["schemas"]["NetworkEvent"][];
+        };
+        NetworkAlertStatusChange: {
+            /** @enum {string} */
+            status: "acknowledged" | "closed" | "suppressed" | "open";
+            reason?: string;
+            /** @description Go duration, e.g. 8h; required to suppress. */
+            suppress_for?: string;
+        };
+        NetworkIncident: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** @enum {string} */
+            severity: "info" | "low" | "medium" | "high" | "critical";
+            /** @enum {string} */
+            status: "open" | "investigating" | "resolved";
+            summary: string;
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            resolved_at?: string;
+            alert_count: number;
+        };
+        NetworkIncidentList: {
+            items: components["schemas"]["NetworkIncident"][];
+        };
+        NetworkTimelineEntry: {
+            id: number;
+            /** Format: date-time */
+            ts: string;
+            actor: string;
+            /** @enum {string} */
+            kind: "opened" | "note" | "status" | "alert_linked" | "evidence";
+            body: string;
+            ref?: string;
+        };
+        NetworkEvidence: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            incident_id: string;
+            /** @enum {string} */
+            kind: "event" | "alert" | "note" | "file";
+            name: string;
+            media_type: string;
+            size: number;
+            sha256: string;
+            ref?: string;
+            added_by: string;
+            /** Format: date-time */
+            added_at: string;
+        };
+        NetworkIncidentDetail: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** @enum {string} */
+            severity: "info" | "low" | "medium" | "high" | "critical";
+            /** @enum {string} */
+            status: "open" | "investigating" | "resolved";
+            summary: string;
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            resolved_at?: string;
+            alert_count: number;
+            alerts: components["schemas"]["NetworkAlert"][];
+            timeline: components["schemas"]["NetworkTimelineEntry"][];
+            evidence: components["schemas"]["NetworkEvidence"][];
+        };
+        NetworkIncidentCreate: {
+            title: string;
+            /** @enum {string} */
+            severity: "info" | "low" | "medium" | "high" | "critical";
+            summary?: string;
+            alert_ids?: string[];
+        };
+        NetworkIncidentUpdate: {
+            /** @enum {string} */
+            status?: "investigating" | "resolved";
+            note?: string;
+            alert_ids?: string[];
+        };
+        NetworkEvidenceCreate: {
+            /** @enum {string} */
+            kind: "event" | "alert" | "note" | "file";
+            name: string;
+            /** @description Event or alert id, for kinds event and alert. */
+            ref?: string;
+            media_type?: string;
+            /**
+             * Format: byte
+             * @description Base64, at most 1 MiB decoded; for kinds note and file.
+             */
+            content?: string;
+        };
+        NetworkEvidenceVerification: {
+            checked: number;
+            valid: boolean;
+            mismatch: string[];
+        };
+        NetworkAsset: {
+            ip: string;
+            /** Format: date-time */
+            first_seen_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+            first_iface: string;
+            events: number;
+            open_ports: number[];
+            attribution: components["schemas"]["NetworkParty"];
+        };
+        NetworkAssetList: {
+            items: components["schemas"]["NetworkAsset"][];
+        };
+        NetworkScope: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            cidrs: string[];
+            techniques: ("icmp-echo" | "tcp-connect")[];
+            ports: number[];
+            rate_pps: number;
+            /** Format: date-time */
+            valid_until: string;
+            /** Format: date-time */
+            issued_at: string;
+            authorization_note: string;
+            created_by: string;
+            /** Format: date-time */
+            revoked_at?: string;
+            revoked_by?: string;
+            /** @enum {string} */
+            status: "active" | "expired" | "revoked";
+        };
+        NetworkScopeList: {
+            items: components["schemas"]["NetworkScope"][];
+        };
+        NetworkScopeCreate: {
+            name: components["schemas"]["ResourceName"];
+            cidrs: string[];
+            techniques: ("icmp-echo" | "tcp-connect")[];
+            ports?: number[];
+            /** @default 20 */
+            rate_pps: number;
+            /**
+             * @description Go duration, 1m to 24h; default 1h.
+             * @default 1h
+             */
+            duration: string;
+            /** @description Who authorised this discovery, and why. */
+            authorization_note: string;
+        };
     };
     responses: {
         /** @description The request is malformed. */
@@ -2075,6 +2738,567 @@ export interface operations {
         };
     };
     verifyVpnAudit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The verification result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditVerification"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getNetworkOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Counts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkOverview"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listNetworkSensors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sensors. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkSensorList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteNetworkSensor: {
+        parameters: {
+            query: {
+                /** @description The resource's name, repeated to confirm a destructive operation. */
+                confirm: components["parameters"]["Confirm"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            428: components["responses"]["ConfirmationRequired"];
+        };
+    };
+    listNetworkEvents: {
+        parameters: {
+            query?: {
+                /** @description Source or destination address. */
+                ip?: string;
+                kind?: "flow" | "dns" | "http" | "tls" | "alert" | "anomaly" | "discovery";
+                since?: string;
+                before?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of events. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkEventPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getNetworkEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The event. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkEvent"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listNetworkAssets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Assets. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkAssetList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listNetworkAlerts: {
+        parameters: {
+            query?: {
+                status?: "open" | "acknowledged" | "closed" | "suppressed";
+                detector?: string;
+                /** @description Minimum severity. */
+                severity?: "info" | "low" | "medium" | "high" | "critical";
+                /** @description Source or destination address. */
+                ip?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Alerts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkAlertList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getNetworkAlert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The alert. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkAlertDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    changeNetworkAlertStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NetworkAlertStatusChange"];
+            };
+        };
+        responses: {
+            /** @description The alert. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkAlert"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listNetworkIncidents: {
+        parameters: {
+            query?: {
+                status?: "open" | "investigating" | "resolved";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Incidents. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkIncidentList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    createNetworkIncident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NetworkIncidentCreate"];
+            };
+        };
+        responses: {
+            /** @description The incident. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getNetworkIncident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The incident. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkIncidentDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateNetworkIncident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NetworkIncidentUpdate"];
+            };
+        };
+        responses: {
+            /** @description The incident. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    addNetworkEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NetworkEvidenceCreate"];
+            };
+        };
+        responses: {
+            /** @description The evidence item. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkEvidence"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    verifyNetworkEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The verification result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkEvidenceVerification"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getNetworkEvidenceContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+                eid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The content. */
+            200: {
+                headers: {
+                    "X-Content-SHA256"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listNetworkScopes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scopes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkScopeList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    issueNetworkScope: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NetworkScopeCreate"];
+            };
+        };
+        responses: {
+            /** @description The scope. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkScope"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    revokeNetworkScope: {
+        parameters: {
+            query: {
+                /** @description The resource's name, repeated to confirm a destructive operation. */
+                confirm: components["parameters"]["Confirm"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The revoked scope. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkScope"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            428: components["responses"]["ConfirmationRequired"];
+        };
+    };
+    listNetworkAudit: {
+        parameters: {
+            query?: {
+                resource_type?: string;
+                resource_id?: string;
+                limit?: number;
+                before?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of entries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    verifyNetworkAudit: {
         parameters: {
             query?: never;
             header?: never;

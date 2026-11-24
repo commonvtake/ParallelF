@@ -39,7 +39,9 @@ export default async function IncidentPage({ params }: { params: Promise<{ id: s
         <div className="space-y-6">
           <Card title={incident.data.title}>
             <p className="flex flex-wrap items-center gap-2 text-sm">
-              <StatusBadge tone={severityTone(incident.data.severity)}>{stateLabel(incident.data.severity)}</StatusBadge>
+              <StatusBadge tone={severityTone(incident.data.severity)}>
+                {stateLabel(incident.data.severity)}
+              </StatusBadge>
               <StatusBadge tone={incidentStatusTone(incident.data.status)}>
                 {stateLabel(incident.data.status)}
               </StatusBadge>
@@ -47,12 +49,16 @@ export default async function IncidentPage({ params }: { params: Promise<{ id: s
                 opened by {incident.data.created_by} {formatTimestamp(incident.data.created_at)}
               </span>
             </p>
-            {incident.data.summary ? <p className="mt-3 text-sm text-slate-700">{incident.data.summary}</p> : null}
+            {incident.data.summary ? (
+              <p className="mt-3 text-sm text-slate-700">{incident.data.summary}</p>
+            ) : null}
           </Card>
 
           <Card title={`Alerts (${incident.data.alerts.length})`}>
             {incident.data.alerts.length === 0 ? (
-              <p className="text-sm text-slate-600">No alerts linked. Open an alert to add it to an incident.</p>
+              <p className="text-sm text-slate-600">
+                No alerts linked. Open an alert to add it to an incident.
+              </p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {incident.data.alerts.map((a) => (
@@ -93,7 +99,9 @@ export default async function IncidentPage({ params }: { params: Promise<{ id: s
                     <span className="text-xs text-slate-500">
                       {e.kind} · {e.size} bytes · added by {e.added_by} {formatTimestamp(e.added_at)}
                     </span>
-                    <span className="block font-mono text-xs break-all text-slate-500">sha256 {e.sha256}</span>
+                    <span className="block font-mono text-xs break-all text-slate-500">
+                      sha256 {e.sha256}
+                    </span>
                   </li>
                 ))}
               </ul>

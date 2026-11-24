@@ -14,7 +14,11 @@ import { requireSession } from "@/lib/session/session";
 
 export const metadata: Metadata = { title: "Discovery scopes · Network Monitoring" };
 
-const TONES: Record<NetworkScope["status"], BadgeTone> = { active: "ok", expired: "neutral", revoked: "down" };
+const TONES: Record<NetworkScope["status"], BadgeTone> = {
+  active: "ok",
+  expired: "neutral",
+  revoked: "down",
+};
 
 export default async function ScopesPage() {
   const session = await requireSession();
@@ -41,7 +45,11 @@ export default async function ScopesPage() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {scopes.data.items.map((s) => (
-                <li key={s.id} data-testid={`scope-${s.name}`} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                <li
+                  key={s.id}
+                  data-testid={`scope-${s.name}`}
+                  className="flex flex-wrap items-start justify-between gap-3 py-3"
+                >
                   <div className="text-sm">
                     <span className="flex flex-wrap items-center gap-2 font-medium text-slate-900">
                       {s.name}
@@ -55,7 +63,9 @@ export default async function ScopesPage() {
                       issued by {s.created_by} {formatTimestamp(s.issued_at)}, valid until{" "}
                       {formatTimestamp(s.valid_until)}
                     </span>
-                    <span className="block text-xs text-slate-600">Authorization: {s.authorization_note}</span>
+                    <span className="block text-xs text-slate-600">
+                      Authorization: {s.authorization_note}
+                    </span>
                   </div>
                   {canManage && s.status === "active" ? (
                     <ConfirmDelete noun="scope" verb="Revoke" name={s.name} path={`network/scopes/${s.id}`} />

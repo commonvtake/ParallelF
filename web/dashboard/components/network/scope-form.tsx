@@ -75,7 +75,13 @@ export function ScopeForm() {
       </label>
       <label className="block text-sm font-medium text-slate-700">
         Ports
-        <input name="ports" disabled={!tcp} required={tcp} placeholder="22, 443" className={`${FIELD} font-mono`} />
+        <input
+          name="ports"
+          disabled={!tcp}
+          required={tcp}
+          placeholder="22, 443"
+          className={`${FIELD} font-mono`}
+        />
       </label>
       <label className="block text-sm font-medium text-slate-700">
         Probes per second
@@ -112,7 +118,10 @@ export function ScopeForm() {
         </button>
       </div>
       {error ? (
-        <p role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-2 text-sm text-rose-900 sm:col-span-2">
+        <p
+          role="alert"
+          className="rounded-md border border-rose-200 bg-rose-50 p-2 text-sm text-rose-900 sm:col-span-2"
+        >
           {error.message}{" "}
           {error.reauth ? (
             <a href="/auth/login?reauth=1&returnTo=/network/scopes" className="font-medium underline">

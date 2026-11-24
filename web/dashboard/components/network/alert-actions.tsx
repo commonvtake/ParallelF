@@ -8,7 +8,12 @@ import type { NetworkAlert, NetworkAlertStatusChange, NetworkIncident } from "@/
 import { alertActions, SEVERITIES } from "@/lib/netguard";
 
 const FIELD = "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-normal";
-const LABELS = { acknowledged: "Acknowledge", closed: "Close", suppressed: "Suppress", open: "Lift suppression" } as const;
+const LABELS = {
+  acknowledged: "Acknowledge",
+  closed: "Close",
+  suppressed: "Suppress",
+  open: "Lift suppression",
+} as const;
 const SUPPRESS_FOR = [
   { value: "1h", label: "1 hour" },
   { value: "8h", label: "8 hours" },
@@ -119,11 +124,21 @@ export function AlertActions({ alert }: { alert: NetworkAlert }) {
           .
         </p>
       ) : (
-        <form onSubmit={(event) => void openIncident(event)} className="space-y-3 border-t border-slate-100 pt-4">
+        <form
+          onSubmit={(event) => void openIncident(event)}
+          className="space-y-3 border-t border-slate-100 pt-4"
+        >
           <h3 className="text-sm font-semibold text-slate-900">Open an incident</h3>
           <label className="block text-sm font-medium text-slate-700">
             Incident title
-            <input name="title" required minLength={3} maxLength={200} defaultValue={alert.title} className={FIELD} />
+            <input
+              name="title"
+              required
+              minLength={3}
+              maxLength={200}
+              defaultValue={alert.title}
+              className={FIELD}
+            />
           </label>
           <label className="block text-sm font-medium text-slate-700">
             Severity

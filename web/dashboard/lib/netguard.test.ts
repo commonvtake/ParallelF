@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { alertActions, detectorLabel, parsePorts, partyLabel, severityTone, splitList, textToBase64 } from "./netguard";
+import {
+  alertActions,
+  detectorLabel,
+  parsePorts,
+  partyLabel,
+  severityTone,
+  splitList,
+  textToBase64,
+} from "./netguard";
 
 describe("netguard helpers", () => {
   it("maps severities to badge tones", () => {

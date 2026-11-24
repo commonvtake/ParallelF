@@ -54,7 +54,9 @@ export function partyLabel(party: NetworkParty | undefined): string {
 }
 
 /** Transitions an analyst may make from a status, in display order. */
-export function alertActions(status: NetworkAlert["status"]): Array<"acknowledged" | "closed" | "suppressed" | "open"> {
+export function alertActions(
+  status: NetworkAlert["status"],
+): Array<"acknowledged" | "closed" | "suppressed" | "open"> {
   switch (status) {
     case "open":
       return ["acknowledged", "suppressed", "closed"];

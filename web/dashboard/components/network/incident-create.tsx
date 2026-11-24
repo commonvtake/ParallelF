@@ -70,7 +70,10 @@ export function IncidentCreate() {
         </button>
       </div>
       {error ? (
-        <p role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-2 text-sm text-rose-900 sm:col-span-3">
+        <p
+          role="alert"
+          className="rounded-md border border-rose-200 bg-rose-50 p-2 text-sm text-rose-900 sm:col-span-3"
+        >
           {error}
         </p>
       ) : null}

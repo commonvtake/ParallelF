@@ -112,7 +112,11 @@ export default async function NetworkPage({
             />
             <Stat testId="stat-incidents" label="Open incidents" value={overview.data.open_incidents} />
             <Stat testId="stat-events" label="Events (24 h)" value={overview.data.events_24h} />
-            <Stat testId="stat-unattributed" label="Unattributed assets" value={overview.data.unattributed_assets} />
+            <Stat
+              testId="stat-unattributed"
+              label="Unattributed assets"
+              value={overview.data.unattributed_assets}
+            />
           </div>
         ) : (
           <ApiError what="the overview" status={overview.status} problem={overview.problem} />
@@ -133,11 +137,15 @@ export default async function NetworkPage({
                 <li key={s.id} data-testid={`sensor-${s.name}`} className="text-sm">
                   <span className="flex flex-wrap items-center gap-2 font-medium text-slate-900">
                     {s.name}
-                    <StatusBadge tone={s.status === "reporting" ? "ok" : "down"}>{stateLabel(s.status)}</StatusBadge>
+                    <StatusBadge tone={s.status === "reporting" ? "ok" : "down"}>
+                      {stateLabel(s.status)}
+                    </StatusBadge>
                   </span>
                   <span className="mt-1 block text-xs text-slate-600">
-                    {s.engine} on <span className="font-mono">{s.interfaces.join(", ") || "no interface yet"}</span> ·{" "}
-                    {s.events_total.toLocaleString("en-US")} events · last report {formatTimestamp(s.last_seen_at)}
+                    {s.engine} on{" "}
+                    <span className="font-mono">{s.interfaces.join(", ") || "no interface yet"}</span> ·{" "}
+                    {s.events_total.toLocaleString("en-US")} events · last report{" "}
+                    {formatTimestamp(s.last_seen_at)}
                   </span>
                   {s.engine_error ? (
                     <span className="block text-xs text-rose-700">Engine: {s.engine_error}</span>
@@ -155,7 +163,9 @@ export default async function NetworkPage({
                 key={s}
                 href={`/network?status=${s}${severity ? `&severity=${severity}` : ""}`}
                 aria-current={s === status ? "page" : undefined}
-                className={s === status ? "font-medium text-slate-900 underline" : "text-slate-600 hover:underline"}
+                className={
+                  s === status ? "font-medium text-slate-900 underline" : "text-slate-600 hover:underline"
+                }
               >
                 {stateLabel(s)}
               </Link>
@@ -169,8 +179,8 @@ export default async function NetworkPage({
             <AlertsTable alerts={alerts.data.items} />
           )}
           <p className="mt-3 text-xs text-slate-500">
-            Suricata watches only ParallelF&apos;s own interfaces (the VPN tunnel and Cloud bridges). Repeats of
-            an alert increase its count instead of opening new ones.
+            Suricata watches only ParallelF&apos;s own interfaces (the VPN tunnel and Cloud bridges). Repeats
+            of an alert increase its count instead of opening new ones.
           </p>
         </Card>
       </div>
