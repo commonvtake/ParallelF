@@ -11,7 +11,6 @@ from __future__ import annotations
 import os
 import socket
 import subprocess
-import tempfile
 import time
 from typing import Any
 
@@ -51,8 +50,10 @@ class Client:
     def __init__(self, namespace: str = "pfvpn-client") -> None:
         self.ns = namespace
 
-    def exec(self, *argv: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-        return run("ip", "netns", "exec", self.ns, *argv, check=check)
+    def exec(
+        self, *argv: str, check: bool = True, stdin: str | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        return run("ip", "netns", "exec", self.ns, *argv, check=check, stdin=stdin)
 
     def up(self, private_key: str, config: dict[str, Any], preshared_key: str = "") -> None:
         """Connects with the configuration pf-vpnd returned at enrolment."""
@@ -70,29 +71,15 @@ class Client:
         self.exec("ip", "route", "add", "default", "via", HOST_ADDR)
 
         self.exec("ip", "link", "add", "wg0", "type", "wireguard")
-        with tempfile.TemporaryDirectory() as tmp:
-            key_file = os.path.join(tmp, "private.key")
-            with open(key_file, "w", encoding="ascii") as f:
-                f.write(private_key + "\n")
-            os.chmod(key_file, 0o600)
-            args = [
-                "wg",
-                "set",
-                "wg0",
-                "private-key",
-                key_file,
-                "peer",
-                config["gateway_public_key"],
-            ]
-            args += ["endpoint", config["endpoint"], "allowed-ips", ",".join(config["allowed_ips"])]
-            args += ["persistent-keepalive", str(config["persistent_keepalive"])]
-            if preshared_key:
-                psk_file = os.path.join(tmp, "psk")
-                with open(psk_file, "w", encoding="ascii") as f:
-                    f.write(preshared_key + "\n")
-                os.chmod(psk_file, 0o600)
-                args += ["preshared-key", psk_file]
-            self.exec(*args)
+        # Keys go to wg on stdin: Ubuntu's AppArmor profile for wg does not
+        # let it open arbitrary files, and arguments are visible to all.
+        self.exec("wg", "set", "wg0", "private-key", "/dev/stdin", stdin=private_key)
+        args = ["wg", "set", "wg0", "peer", config["gateway_public_key"]]
+        args += ["endpoint", config["endpoint"], "allowed-ips", ",".join(config["allowed_ips"])]
+        args += ["persistent-keepalive", str(config["persistent_keepalive"])]
+        if preshared_key:
+            args += ["preshared-key", "/dev/stdin"]
+        self.exec(*args, stdin=preshared_key or None)
         self.exec("ip", "address", "add", config["address"], "dev", "wg0")
         self.exec("ip", "link", "set", "wg0", "up")
         for cidr in config["allowed_ips"]:

@@ -75,8 +75,9 @@ func (m *Manager) EnsureInterface(ctx context.Context, want vpnagent.Interface) 
 			return err
 		}
 	}
-	// The key goes to wg on stdin, like pre-shared keys: no other process
-	// needs to open the key file.
+	// The key goes to wg on stdin, like pre-shared keys: Ubuntu's AppArmor
+	// profile for wg does not let it open files elsewhere, and no other
+	// process needs to open the key file.
 	private, err := os.ReadFile(m.KeyPath)
 	if err != nil {
 		return fmt.Errorf("read the gateway key: %w", err)
