@@ -36,21 +36,27 @@ make wg-agent-install    # the gateway agent under systemd (sudo)
 make verify-vpn          # enrol, connect, deny, activate, policy, deactivate, revoke
 ```
 
-`make verify-vpn` plays the device in a network namespace with its own key pair and checks each step. On a GitHub runner it prints (numbers vary):
+`make verify-vpn` plays the device in a network namespace with its own key pair and checks each step. This is its output from CI run 45476626574 on a GitHub runner:
 
 ```
 Gateway
-  PASS  gateway runner is READY at 10.1.0.12:51820 (10.255.0.1/22)
+  PASS  gateway ip-10-0-133-96 is READY at 10.0.133.96:51820 (10.255.0.1/22)
 Enrolment
-  PASS  enrolled verify-04217 at 10.255.0.10 with a pre-shared key (only the public key was sent)
+  PASS  enrolled verify-50950 at 10.255.0.10 with a pre-shared key (only the public key was sent)
   PASS  the gateway configured the peer; device ENROLLED
   PASS  WireGuard handshake completed
   PASS  not active yet: traffic is dropped (enrolled is not allowed)
 Activation
-  PASS  activated: the platform answers ping after 0.3s
-  ...
+  PASS  activated: the platform answers ping after 1.2s
+  PASS  policy allows TCP 8000 on the platform
+  PASS  TCP 9999 is denied by default
+  PASS  deactivated: traffic is dropped again
 Revocation
-  PASS  revoked: peer removed from the gateway 0.41s after the request (target < 10s)
+  PASS  revoked: peer removed from the gateway 0.25s after the request (target < 10s)
+Audit
+  PASS  audit chain of 6 entries verifies
+
+11 passed, 0 failed
 ```
 
 Then open <http://localhost:3000/vpn>, enrol a device (the dashboard generates the key pair with WebCrypto and gives you a `.conf` to import into the WireGuard app), and activate it.
@@ -158,7 +164,7 @@ The agent's sync is a long-poll: pf-vpnd holds it open until the desired-state r
 
 - The server stores public keys only. Pre-shared keys are generated server-side, stored encrypted with AES-256-GCM under `PF_VPN_PSK_KEY` (bound to the device ID), shown once, and passed to `wg` on stdin, never as arguments.
 - The gateway's private key is generated on the gateway (`wg genkey`), stored 0600 in `/var/lib/parallelf/vpn`, and never leaves it. The gateway credential is 32 random bytes; pf-vpnd keeps its SHA-256.
-- The agent touches only its interface and its nftables table. Its systemd unit keeps only `CAP_NET_ADMIN` and `CAP_NET_RAW`.
+- The agent touches only its interface and its nftables table. Its systemd unit keeps only `CAP_NET_ADMIN` and `CAP_NET_RAW`. Keys reach `wg` on stdin from a root-owned pipe: on Ubuntu, AppArmor confines `wg` and it cannot open key files elsewhere.
 - Another user's device is answered with 404, not 403, so its existence is not disclosed.
 
 ## Configuration
