@@ -50,7 +50,7 @@ def test_unknown_route_is_a_problem_document(
 def test_unknown_api_domain_is_not_routed(
     gateway: httpx.Client, owner_headers: dict[str, str]
 ) -> None:
-    response = gateway.get("/api/v1/vpn/tunnels", headers=owner_headers)
+    response = gateway.get("/api/v1/network/sensors", headers=owner_headers)
 
     assert response.status_code == 404
 
@@ -72,10 +72,12 @@ def test_system_status_reports_every_component(
         (None, "pf-gateway"): "ok",
         (None, "core"): "ok",
         (None, "cloud"): "ok",
+        (None, "vpn"): "ok",
         (None, "ai"): "ok",
         (None, "identity-provider"): "ok",
         ("core", "postgres"): "ok",
         ("cloud", "postgres"): "ok",
+        ("vpn", "postgres"): "ok",
     }
     dependencies = [c for c in report["components"] if c["name"] == "postgres"]
     assert {c["kind"] for c in dependencies} == {"dependency"}
