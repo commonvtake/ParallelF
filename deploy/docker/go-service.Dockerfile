@@ -4,8 +4,8 @@
 #
 #   docker build -f deploy/docker/go-service.Dockerfile --build-arg SERVICE=core .
 #
-# SERVICE is "core", "gateway" or "cloud" and selects services/<SERVICE>/cmd/<BINARY>;
-# BINARY defaults to pf-<SERVICE> (pf-cloudd for the cloud service).
+# SERVICE is "core", "gateway", "cloud" or "vpn" and selects services/<SERVICE>/cmd/<BINARY>;
+# BINARY defaults to pf-<SERVICE> (pf-cloudd and pf-vpnd for cloud and vpn).
 
 ARG GO_VERSION=1.27
 
@@ -20,6 +20,7 @@ COPY gen ./gen
 COPY services/core ./services/core
 COPY services/gateway ./services/gateway
 COPY services/cloud ./services/cloud
+COPY services/vpn ./services/vpn
 
 ARG SERVICE
 ARG BINARY=

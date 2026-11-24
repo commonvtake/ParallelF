@@ -5,6 +5,7 @@ docs
 web
 tests
 services/node-agent
+services/vpn-agent
 bin
 **/node_modules
 **/.next
