@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+// Domain events published by pf-netguardd.
+//
+// Wire format: the message is encoded as protojson and carried with
+// CloudEvents 1.0 attributes (see api/events/README.md). Changes must stay
+// backward compatible within v1; `buf breaking` enforces this in CI.
+package parallelf.netguard.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// A sensor registered (or re-registered) with pf-netguardd.
+//
+// Subject: pf.netguard.evt.sensor.registered
+message SensorRegistered {
+  string sensor_id = 1;
+  string name = 2;
+  string engine = 3;
+  google.protobuf.Timestamp registered_at = 4;
+}
+
+// An address on a monitored network, as far as NetGuard can tell.
+message Party {
+  string ip = 1;
+  // workload, vpn_device, network_gateway, infrastructure or unknown.
+  string kind = 2;
+  string entity_id = 3;
+  string name = 4;
+  string project_id = 5;
+  string owner_subject = 6;
+}
+
+// A detector raised a new alert (repeats of an open alert only increase
+// its count and do not emit this event).
+//
+// Subject: pf.netguard.evt.alert.raised
+message AlertRaised {
+  string alert_id = 1;
+  // suricata.passthrough, ng.port_scan, ng.new_device, ng.lab_egress_attempt
+  // or ng.dns_anomaly.
+  string detector = 2;
+  string rule_id = 3;
+  // info, low, medium, high or critical.
+  string severity = 4;
+  string title = 5;
+  Party source = 6;
+  Party destination = 7;
+  google.protobuf.Timestamp first_seen_at = 8;
+}
+
+// An analyst acknowledged, closed or suppressed an alert.
+//
+// Subject: pf.netguard.evt.alert.status_changed
+message AlertStatusChanged {
+  string alert_id = 1;
+  string previous_status = 2;
+  string status = 3;
+  string actor = 4;
+  string reason = 5;
+  google.protobuf.Timestamp changed_at = 6;
+}
+
+// An incident was opened or changed status.
+//
+// Subject: pf.netguard.evt.incident.changed
+message IncidentChanged {
+  string incident_id = 1;
+  string title = 2;
+  string severity = 3;
+  string previous_status = 4;
+  string status = 5;
+  string actor = 6;
+  google.protobuf.Timestamp changed_at = 7;
+}
+
+// Evidence was added to an incident. Content stays in NetGuard; the event
+// carries its digest.
+//
+// Subject: pf.netguard.evt.evidence.added
+message EvidenceAdded {
+  string evidence_id = 1;
+  string incident_id = 2;
+  string kind = 3;
+  string name = 4;
+  string sha256 = 5;
+  string actor = 6;
+  google.protobuf.Timestamp added_at = 7;
+}
+
+// A discovery scope was issued or revoked.
+//
+// Subject: pf.netguard.evt.scope.changed
+message ScopeChanged {
+  string scope_id = 1;
+  string name = 2;
+  repeated string cidrs = 3;
+  // issued or revoked.
+  string change = 4;
+  string actor = 5;
+  google.protobuf.Timestamp valid_until = 6;
+  google.protobuf.Timestamp changed_at = 7;
+}

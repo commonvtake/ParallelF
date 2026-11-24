@@ -25,6 +25,8 @@ tags:
     description: Nodes, networks, workloads, quotas and audit (pf-cloudd)
   - name: vpn
     description: WireGuard devices, activations, access policies and audit (pf-vpnd)
+  - name: network
+    description: Network monitoring, alerts, incidents, evidence and discovery scopes (pf-netguardd)
   - name: ai
     description: AI Investigator (pf-aid)
 security:
@@ -611,6 +613,601 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+
+  /api/v1/network/overview:
+    get:
+      operationId: getNetworkOverview
+      tags:
+      - network
+      summary: NetGuard at a glance
+      description: Requires `network.resources.read`.
+      responses:
+        '200':
+          description: Counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkOverview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/network/sensors:
+    get:
+      operationId: listNetworkSensors
+      tags:
+      - network
+      summary: List sensors
+      responses:
+        '200':
+          description: Sensors.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkSensorList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/network/sensors/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    delete:
+      operationId: deleteNetworkSensor
+      tags:
+      - network
+      summary: Remove a silent sensor
+      description: Requires `network.sensors.manage` and `confirm` equal to its name. Its telemetry is deleted with it.
+      parameters:
+      - $ref: '#/components/parameters/Confirm'
+      responses:
+        '204':
+          description: Removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '428':
+          $ref: '#/components/responses/ConfirmationRequired'
+  /api/v1/network/events:
+    get:
+      operationId: listNetworkEvents
+      tags:
+      - network
+      summary: List telemetry
+      description: Newest first.
+      parameters:
+      - name: ip
+        in: query
+        schema:
+          type: string
+        description: Source or destination address.
+      - name: kind
+        in: query
+        schema:
+          type: string
+          enum:
+          - flow
+          - dns
+          - http
+          - tls
+          - alert
+          - anomaly
+          - discovery
+      - name: since
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: before
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+      responses:
+        '200':
+          description: A page of events.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkEventPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /api/v1/network/events/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    get:
+      operationId: getNetworkEvent
+      tags:
+      - network
+      summary: Get an event
+      responses:
+        '200':
+          description: The event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/network/assets:
+    get:
+      operationId: listNetworkAssets
+      tags:
+      - network
+      summary: List assets
+      description: Every address seen on a monitored network, with who holds it now.
+      responses:
+        '200':
+          description: Assets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkAssetList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/network/alerts:
+    get:
+      operationId: listNetworkAlerts
+      tags:
+      - network
+      summary: List alerts
+      description: Most recently seen first.
+      parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - open
+          - acknowledged
+          - closed
+          - suppressed
+      - name: detector
+        in: query
+        schema:
+          type: string
+      - name: severity
+        in: query
+        schema:
+          type: string
+          enum:
+          - info
+          - low
+          - medium
+          - high
+          - critical
+        description: Minimum severity.
+      - name: ip
+        in: query
+        schema:
+          type: string
+        description: Source or destination address.
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+      responses:
+        '200':
+          description: Alerts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkAlertList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /api/v1/network/alerts/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    get:
+      operationId: getNetworkAlert
+      tags:
+      - network
+      summary: Get an alert with its telemetry
+      responses:
+        '200':
+          description: The alert.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkAlertDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/network/alerts/{id}/status:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    post:
+      operationId: changeNetworkAlertStatus
+      tags:
+      - network
+      summary: Acknowledge, close, suppress or reopen an alert
+      description: Requires `network.alerts.triage`. Suppression needs a reason and lasts at most 720h.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkAlertStatusChange'
+      responses:
+        '200':
+          description: The alert.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkAlert'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /api/v1/network/incidents:
+    get:
+      operationId: listNetworkIncidents
+      tags:
+      - network
+      summary: List incidents
+      parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - open
+          - investigating
+          - resolved
+      responses:
+        '200':
+          description: Incidents.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkIncidentList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+    post:
+      operationId: createNetworkIncident
+      tags:
+      - network
+      summary: Open an incident
+      description: Requires `network.alerts.triage`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkIncidentCreate'
+      responses:
+        '201':
+          description: The incident.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkIncident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /api/v1/network/incidents/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    get:
+      operationId: getNetworkIncident
+      tags:
+      - network
+      summary: Get an incident with its alerts, timeline and evidence
+      responses:
+        '200':
+          description: The incident.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkIncidentDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateNetworkIncident
+      tags:
+      - network
+      summary: Change status, add a note or link alerts
+      description: Requires `network.alerts.triage`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkIncidentUpdate'
+      responses:
+        '200':
+          description: The incident.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkIncident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /api/v1/network/incidents/{id}/evidence:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    post:
+      operationId: addNetworkEvidence
+      tags:
+      - network
+      summary: Add evidence
+      description: Requires `network.alerts.triage`. Events and alerts are captured by the server; their SHA-256 is recorded and the item can never change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkEvidenceCreate'
+      responses:
+        '201':
+          description: The evidence item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkEvidence'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /api/v1/network/incidents/{id}/verify-evidence:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    get:
+      operationId: verifyNetworkEvidence
+      tags:
+      - network
+      summary: Recompute every evidence digest of an incident
+      responses:
+        '200':
+          description: The verification result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkEvidenceVerification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/network/incidents/{id}/evidence/{eid}:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    - name: eid
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      operationId: getNetworkEvidenceContent
+      tags:
+      - network
+      summary: Download an evidence item
+      description: Served as an attachment with its recorded digest in `X-Content-SHA256`.
+      responses:
+        '200':
+          description: The content.
+          headers:
+            X-Content-SHA256:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/network/scopes:
+    get:
+      operationId: listNetworkScopes
+      tags:
+      - network
+      summary: List discovery scopes
+      responses:
+        '200':
+          description: Scopes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkScopeList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: issueNetworkScope
+      tags:
+      - network
+      summary: Issue a signed discovery scope
+      description: Requires `network.scopes.manage` and a recent sign-in. Ranges must lie inside ParallelF's networks; the sensor re-checks the guards (private ranges, at most /22, ICMP echo and TCP connect
+        only, at most 100 probes per second).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkScopeCreate'
+      responses:
+        '201':
+          description: The scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkScope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /api/v1/network/scopes/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    delete:
+      operationId: revokeNetworkScope
+      tags:
+      - network
+      summary: Revoke a discovery scope
+      description: Requires `network.scopes.manage` and `confirm` equal to its name.
+      parameters:
+      - $ref: '#/components/parameters/Confirm'
+      responses:
+        '200':
+          description: The revoked scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkScope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '428':
+          $ref: '#/components/responses/ConfirmationRequired'
+  /api/v1/network/audit:
+    get:
+      operationId: listNetworkAudit
+      tags:
+      - network
+      summary: List the NetGuard audit trail
+      description: Newest first. Requires `network.audit.read`.
+      parameters:
+      - name: resource_type
+        in: query
+        schema:
+          type: string
+      - name: resource_id
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+      - name: before
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        '200':
+          description: A page of entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /api/v1/network/audit/verify:
+    get:
+      operationId: verifyNetworkAudit
+      tags:
+      - network
+      summary: Verify the NetGuard audit chain
+      description: Requires `network.audit.read`.
+      responses:
+        '200':
+          description: The verification result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditVerification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /api/v1/ai/info:
     get:
@@ -2429,3 +3026,828 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/VPNTrafficPoint"
+
+    NetworkOverview:
+      type: object
+      additionalProperties: false
+      required:
+      - sensors
+      - sensors_reporting
+      - events_24h
+      - events_by_kind_1h
+      - open_alerts_by_severity
+      - open_incidents
+      - assets
+      - unattributed_assets
+      - active_scopes
+      properties:
+        sensors:
+          type: integer
+        sensors_reporting:
+          type: integer
+        events_24h:
+          type: integer
+        events_by_kind_1h:
+          type: object
+          additionalProperties:
+            type: integer
+        open_alerts_by_severity:
+          type: object
+          additionalProperties:
+            type: integer
+        open_incidents:
+          type: integer
+        assets:
+          type: integer
+        unattributed_assets:
+          type: integer
+        active_scopes:
+          type: integer
+
+    NetworkSensor:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - status
+      - agent_version
+      - engine
+      - interfaces
+      - engine_error
+      - events_total
+      - registered_at
+      - last_seen_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+          - reporting
+          - silent
+        agent_version:
+          type: string
+        engine:
+          type: string
+        interfaces:
+          type: array
+          items:
+            type: string
+        engine_error:
+          type: string
+        events_total:
+          type: integer
+        registered_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+
+    NetworkSensorList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkSensor'
+
+    NetworkEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - sensor_id
+      - ts
+      - kind
+      - iface
+      - details
+      - raw_sha256
+      properties:
+        id:
+          type: integer
+        sensor_id:
+          type: string
+          format: uuid
+        ts:
+          type: string
+          format: date-time
+        kind:
+          type: string
+          enum:
+          - flow
+          - dns
+          - http
+          - tls
+          - alert
+          - anomaly
+          - discovery
+        iface:
+          type: string
+        src_ip:
+          type: string
+        src_port:
+          type: integer
+        dst_ip:
+          type: string
+        dst_port:
+          type: integer
+        proto:
+          type: string
+        community_id:
+          type: string
+        app_proto:
+          type: string
+        details:
+          type: object
+          additionalProperties:
+            type: string
+        raw_sha256:
+          type: string
+          description: SHA-256 of the sensor's source line.
+
+    NetworkEventPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkEvent'
+        next_before:
+          type: integer
+
+    NetworkParty:
+      type: object
+      additionalProperties: false
+      required:
+      - ip
+      - kind
+      properties:
+        ip:
+          type: string
+        kind:
+          type: string
+          enum:
+          - workload
+          - vpn_device
+          - network_gateway
+          - infrastructure
+          - unknown
+        entity_id:
+          type: string
+        name:
+          type: string
+        project_id:
+          type: string
+        owner_subject:
+          type: string
+
+    NetworkAttribution:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        source:
+          $ref: '#/components/schemas/NetworkParty'
+        destination:
+          $ref: '#/components/schemas/NetworkParty'
+
+    NetworkAlert:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - detector
+      - rule_id
+      - severity
+      - title
+      - status
+      - count
+      - first_seen_at
+      - last_seen_at
+      - details
+      - attribution
+      properties:
+        id:
+          type: string
+          format: uuid
+        detector:
+          type: string
+        rule_id:
+          type: string
+        severity:
+          type: string
+          enum:
+          - info
+          - low
+          - medium
+          - high
+          - critical
+        title:
+          type: string
+        src_ip:
+          type: string
+        dst_ip:
+          type: string
+        status:
+          type: string
+          enum:
+          - open
+          - acknowledged
+          - closed
+          - suppressed
+        count:
+          type: integer
+        first_seen_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+        first_event_id:
+          type: integer
+        last_event_id:
+          type: integer
+        details:
+          type: object
+          additionalProperties:
+            type: string
+        attribution:
+          $ref: '#/components/schemas/NetworkAttribution'
+        incident_id:
+          type: string
+        status_reason:
+          type: string
+        status_by:
+          type: string
+        suppressed_until:
+          type: string
+          format: date-time
+
+    NetworkAlertList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkAlert'
+
+    NetworkAlertDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - detector
+      - rule_id
+      - severity
+      - title
+      - status
+      - count
+      - first_seen_at
+      - last_seen_at
+      - details
+      - attribution
+      - events
+      properties:
+        id:
+          type: string
+          format: uuid
+        detector:
+          type: string
+        rule_id:
+          type: string
+        severity:
+          type: string
+          enum:
+          - info
+          - low
+          - medium
+          - high
+          - critical
+        title:
+          type: string
+        src_ip:
+          type: string
+        dst_ip:
+          type: string
+        status:
+          type: string
+          enum:
+          - open
+          - acknowledged
+          - closed
+          - suppressed
+        count:
+          type: integer
+        first_seen_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+        first_event_id:
+          type: integer
+        last_event_id:
+          type: integer
+        details:
+          type: object
+          additionalProperties:
+            type: string
+        attribution:
+          $ref: '#/components/schemas/NetworkAttribution'
+        incident_id:
+          type: string
+        status_reason:
+          type: string
+        status_by:
+          type: string
+        suppressed_until:
+          type: string
+          format: date-time
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkEvent'
+
+    NetworkAlertStatusChange:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - acknowledged
+          - closed
+          - suppressed
+          - open
+        reason:
+          type: string
+          maxLength: 1000
+        suppress_for:
+          type: string
+          description: Go duration, e.g. 8h; required to suppress.
+
+    NetworkIncident:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - severity
+      - status
+      - summary
+      - created_by
+      - created_at
+      - updated_at
+      - alert_count
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        severity:
+          type: string
+          enum:
+          - info
+          - low
+          - medium
+          - high
+          - critical
+        status:
+          type: string
+          enum:
+          - open
+          - investigating
+          - resolved
+        summary:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+        alert_count:
+          type: integer
+
+    NetworkIncidentList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkIncident'
+
+    NetworkTimelineEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - ts
+      - actor
+      - kind
+      - body
+      properties:
+        id:
+          type: integer
+        ts:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        kind:
+          type: string
+          enum:
+          - opened
+          - note
+          - status
+          - alert_linked
+          - evidence
+        body:
+          type: string
+        ref:
+          type: string
+
+    NetworkEvidence:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - incident_id
+      - kind
+      - name
+      - media_type
+      - size
+      - sha256
+      - added_by
+      - added_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        incident_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+          - event
+          - alert
+          - note
+          - file
+        name:
+          type: string
+        media_type:
+          type: string
+        size:
+          type: integer
+        sha256:
+          type: string
+        ref:
+          type: string
+        added_by:
+          type: string
+        added_at:
+          type: string
+          format: date-time
+
+    NetworkIncidentDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - severity
+      - status
+      - summary
+      - created_by
+      - created_at
+      - updated_at
+      - alert_count
+      - alerts
+      - timeline
+      - evidence
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        severity:
+          type: string
+          enum:
+          - info
+          - low
+          - medium
+          - high
+          - critical
+        status:
+          type: string
+          enum:
+          - open
+          - investigating
+          - resolved
+        summary:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+        alert_count:
+          type: integer
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkAlert'
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkTimelineEntry'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkEvidence'
+
+    NetworkIncidentCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - severity
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
+        severity:
+          type: string
+          enum:
+          - info
+          - low
+          - medium
+          - high
+          - critical
+        summary:
+          type: string
+          maxLength: 5000
+        alert_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    NetworkIncidentUpdate:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        status:
+          type: string
+          enum:
+          - investigating
+          - resolved
+        note:
+          type: string
+          maxLength: 5000
+        alert_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    NetworkEvidenceCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - name
+      properties:
+        kind:
+          type: string
+          enum:
+          - event
+          - alert
+          - note
+          - file
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        ref:
+          type: string
+          description: Event or alert id, for kinds event and alert.
+        media_type:
+          type: string
+        content:
+          type: string
+          format: byte
+          description: Base64, at most 1 MiB decoded; for kinds note and file.
+
+    NetworkEvidenceVerification:
+      type: object
+      additionalProperties: false
+      required:
+      - checked
+      - valid
+      - mismatch
+      properties:
+        checked:
+          type: integer
+        valid:
+          type: boolean
+        mismatch:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    NetworkAsset:
+      type: object
+      additionalProperties: false
+      required:
+      - ip
+      - first_seen_at
+      - last_seen_at
+      - first_iface
+      - events
+      - open_ports
+      - attribution
+      properties:
+        ip:
+          type: string
+        first_seen_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+        first_iface:
+          type: string
+        events:
+          type: integer
+        open_ports:
+          type: array
+          items:
+            type: integer
+        attribution:
+          $ref: '#/components/schemas/NetworkParty'
+
+    NetworkAssetList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkAsset'
+
+    NetworkScope:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - cidrs
+      - techniques
+      - ports
+      - rate_pps
+      - valid_until
+      - issued_at
+      - authorization_note
+      - created_by
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        cidrs:
+          type: array
+          items:
+            type: string
+        techniques:
+          type: array
+          items:
+            type: string
+            enum:
+            - icmp-echo
+            - tcp-connect
+        ports:
+          type: array
+          items:
+            type: integer
+        rate_pps:
+          type: integer
+        valid_until:
+          type: string
+          format: date-time
+        issued_at:
+          type: string
+          format: date-time
+        authorization_note:
+          type: string
+        created_by:
+          type: string
+        revoked_at:
+          type: string
+          format: date-time
+        revoked_by:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - expired
+          - revoked
+
+    NetworkScopeList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkScope'
+
+    NetworkScopeCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - cidrs
+      - techniques
+      - authorization_note
+      properties:
+        name:
+          $ref: '#/components/schemas/ResourceName'
+        cidrs:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+        techniques:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum:
+            - icmp-echo
+            - tcp-connect
+        ports:
+          type: array
+          maxItems: 32
+          items:
+            type: integer
+            minimum: 1
+            maximum: 65535
+        rate_pps:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        duration:
+          type: string
+          description: Go duration, 1m to 24h; default 1h.
+          default: 1h
+        authorization_note:
+          type: string
+          minLength: 10
+          maxLength: 1000
+          description: Who authorised this discovery, and why.

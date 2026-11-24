@@ -32,7 +32,7 @@ export const SECTIONS: readonly Section[] = [
   {
     href: "/network",
     label: "Network Monitoring",
-    status: "not-implemented",
+    status: "available",
     summary: "Authorized discovery, telemetry, topology, alerts and incidents.",
   },
   {

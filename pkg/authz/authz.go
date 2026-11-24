@@ -36,6 +36,12 @@ const (
 	VPNPoliciesManage = "vpn.policies.manage" // create and delete access policies
 	VPNGatewaysManage = "vpn.gateways.manage" // remove gateways
 	VPNAuditRead      = "vpn.audit.read"      // read and verify the VPN audit trail
+
+	NetworkResourcesRead = "network.resources.read" // sensors, events, assets, alerts, incidents, scopes
+	NetworkAlertsTriage  = "network.alerts.triage"  // acknowledge, close and suppress alerts; incidents and evidence
+	NetworkScopesManage  = "network.scopes.manage"  // issue and revoke discovery scopes
+	NetworkSensorsManage = "network.sensors.manage" // remove sensors
+	NetworkAuditRead     = "network.audit.read"     // read and verify the NetGuard audit trail
 )
 
 //go:embed permissions.json

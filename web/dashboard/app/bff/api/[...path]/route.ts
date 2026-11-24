@@ -14,10 +14,17 @@ import { getAccessToken, getSession } from "@/lib/session/session";
 
 export const dynamic = "force-dynamic";
 
-const MAX_BODY_BYTES = 1 << 20;
+// NetGuard evidence of up to 1 MiB arrives base64-encoded in JSON.
+const MAX_BODY_BYTES = 2 << 20;
 const TIMEOUT_MS = 15_000;
 const SAFE_METHODS = new Set(["GET", "HEAD"]);
-const PASSED_RESPONSE_HEADERS = ["content-type", "location", "x-request-id"];
+const PASSED_RESPONSE_HEADERS = [
+  "content-type",
+  "content-disposition",
+  "location",
+  "x-request-id",
+  "x-content-sha256",
+];
 
 interface RouteContext {
   params: Promise<{ path: string[] }>;
@@ -91,4 +98,4 @@ async function forward(request: NextRequest, context: RouteContext): Promise<Nex
   });
 }
 
-export { forward as DELETE, forward as GET, forward as POST, forward as PUT };
+export { forward as DELETE, forward as GET, forward as PATCH, forward as POST, forward as PUT };

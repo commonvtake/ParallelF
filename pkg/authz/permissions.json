@@ -16,7 +16,12 @@
       "vpn.devices.manage",
       "vpn.policies.manage",
       "vpn.gateways.manage",
-      "vpn.audit.read"
+      "vpn.audit.read",
+      "network.resources.read",
+      "network.alerts.triage",
+      "network.scopes.manage",
+      "network.sensors.manage",
+      "network.audit.read"
     ],
     "admin": [
       "system.status.read",
@@ -34,7 +39,12 @@
       "vpn.devices.manage",
       "vpn.policies.manage",
       "vpn.gateways.manage",
-      "vpn.audit.read"
+      "vpn.audit.read",
+      "network.resources.read",
+      "network.alerts.triage",
+      "network.scopes.manage",
+      "network.sensors.manage",
+      "network.audit.read"
     ],
     "operator": [
       "system.status.read",
@@ -43,7 +53,8 @@
       "cloud.workloads.manage",
       "cloud.networks.manage",
       "vpn.resources.read",
-      "vpn.devices.use"
+      "vpn.devices.use",
+      "network.resources.read"
     ],
     "analyst": [
       "system.status.read",
@@ -52,20 +63,25 @@
       "cloud.audit.read",
       "vpn.resources.read",
       "vpn.devices.use",
-      "vpn.audit.read"
+      "vpn.audit.read",
+      "network.resources.read",
+      "network.alerts.triage",
+      "network.audit.read"
     ],
     "lab-researcher": [
       "system.status.read",
       "core.projects.read",
       "cloud.resources.read",
       "vpn.resources.read",
-      "vpn.devices.use"
+      "vpn.devices.use",
+      "network.resources.read"
     ],
     "viewer": [
       "system.status.read",
       "core.projects.read",
       "cloud.resources.read",
-      "vpn.resources.read"
+      "vpn.resources.read",
+      "network.resources.read"
     ]
   }
 }

@@ -17,8 +17,9 @@ import (
 // ServiceName identifies this service in logs and health output.
 const ServiceName = "pf-gateway"
 
-// maxBodyBytes bounds request bodies accepted at the edge.
-const maxBodyBytes = 1 << 20
+// maxBodyBytes bounds request bodies accepted at the edge (NetGuard
+// evidence of up to 1 MiB arrives base64-encoded).
+const maxBodyBytes = 2 << 20
 
 // NewHandler returns the gateway's HTTP handler.
 //
@@ -29,6 +30,7 @@ const maxBodyBytes = 1 << 20
 //	/api/v1/core/...             pf-core   (authenticated)
 //	/api/v1/cloud/...            pf-cloudd (authenticated)
 //	/api/v1/vpn/...              pf-vpnd   (authenticated)
+//	/api/v1/network/...          pf-netguardd (authenticated)
 //	/api/v1/ai/...               pf-aid    (authenticated)
 //
 // Every /api/ route requires a valid access token. Upstreams receive the
@@ -43,6 +45,7 @@ func NewHandler(cfg config.Config, verifier authn.Verifier, transport http.Round
 		{Name: "core", Kind: "service", URL: cfg.CoreURL.String() + "/readyz", ExposeChecks: true},
 		{Name: "cloud", Kind: "service", URL: cfg.CloudURL.String() + "/readyz", ExposeChecks: true},
 		{Name: "vpn", Kind: "service", URL: cfg.VPNURL.String() + "/readyz", ExposeChecks: true},
+		{Name: "netguard", Kind: "service", URL: cfg.NetGuardURL.String() + "/readyz", ExposeChecks: true},
 		{Name: "ai", Kind: "service", URL: cfg.AIURL.String() + "/readyz", ExposeChecks: true},
 		{Name: "identity-provider", Kind: "identity-provider", URL: cfg.OIDC.JWKSURL},
 	}, transport)
@@ -52,6 +55,7 @@ func NewHandler(cfg config.Config, verifier authn.Verifier, transport http.Round
 	mux.Handle("/api/v1/core/", httpx.Chain(proxy.New("core", cfg.CoreURL, transport, logger), authenticate))
 	mux.Handle("/api/v1/cloud/", httpx.Chain(proxy.New("cloud", cfg.CloudURL, transport, logger), authenticate))
 	mux.Handle("/api/v1/vpn/", httpx.Chain(proxy.New("vpn", cfg.VPNURL, transport, logger), authenticate))
+	mux.Handle("/api/v1/network/", httpx.Chain(proxy.New("netguard", cfg.NetGuardURL, transport, logger), authenticate))
 	mux.Handle("/api/v1/ai/", httpx.Chain(proxy.New("ai", cfg.AIURL, transport, logger), authenticate))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -16,6 +16,7 @@ type Config struct {
 	CoreURL         *url.URL
 	CloudURL        *url.URL
 	VPNURL          *url.URL
+	NetGuardURL     *url.URL
 	AIURL           *url.URL
 	OIDC            authn.OIDCSettings
 	ShutdownTimeout time.Duration
@@ -29,6 +30,7 @@ func Load(l *config.Loader) (Config, error) {
 		CoreURL:         l.URL("PF_UPSTREAM_CORE_URL"),
 		CloudURL:        l.URL("PF_UPSTREAM_CLOUD_URL"),
 		VPNURL:          l.URL("PF_UPSTREAM_VPN_URL"),
+		NetGuardURL:     l.URL("PF_UPSTREAM_NETGUARD_URL"),
 		AIURL:           l.URL("PF_UPSTREAM_AI_URL"),
 		OIDC:            authn.LoadOIDCSettings(l),
 		ShutdownTimeout: l.Duration("PF_SHUTDOWN_TIMEOUT", 10*time.Second),
