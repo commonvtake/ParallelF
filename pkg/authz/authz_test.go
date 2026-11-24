@@ -44,8 +44,8 @@ func TestAllowedDeniesByDefault(t *testing.T) {
 
 func TestPermissionsForIsSortedUnion(t *testing.T) {
 	got := PermissionsFor([]string{"viewer", "analyst", "unknown"})
-	want := []string{"cloud.audit.read", "cloud.resources.read", "core.projects.read", "system.status.read",
-		"vpn.audit.read", "vpn.devices.use", "vpn.resources.read"}
+	want := []string{"cloud.audit.read", "cloud.resources.read", "core.projects.read", "network.alerts.triage",
+		"network.audit.read", "network.resources.read", "system.status.read", "vpn.audit.read", "vpn.devices.use", "vpn.resources.read"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("PermissionsFor = %v, want %v", got, want)
 	}

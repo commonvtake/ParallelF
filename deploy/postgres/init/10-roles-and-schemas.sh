@@ -6,7 +6,7 @@
 # Run by the Compose "db-init" service and by CI against a service
 # container. Connection settings come from the standard PG* variables.
 #
-# For every service <svc> (core, cloud, vpn):
+# For every service <svc> (core, cloud, vpn, netguard):
 #   pf_<svc>_owner  owns schema "<svc>"; used only to run migrations
 #   pf_<svc>        runtime role; DML only, granted per table by migrations
 set -eu
@@ -17,6 +17,8 @@ set -eu
 : "${PF_CLOUD_DB_PASSWORD:?must be set}"
 : "${PF_VPN_OWNER_DB_PASSWORD:?must be set}"
 : "${PF_VPN_DB_PASSWORD:?must be set}"
+: "${PF_NETGUARD_OWNER_DB_PASSWORD:?must be set}"
+: "${PF_NETGUARD_DB_PASSWORD:?must be set}"
 
 psql -v ON_ERROR_STOP=1 \
   --username "${POSTGRES_USER:-postgres}" \
@@ -26,7 +28,9 @@ psql -v ON_ERROR_STOP=1 \
   -v cloud_owner_pw="$PF_CLOUD_OWNER_DB_PASSWORD" \
   -v cloud_runtime_pw="$PF_CLOUD_DB_PASSWORD" \
   -v vpn_owner_pw="$PF_VPN_OWNER_DB_PASSWORD" \
-  -v vpn_runtime_pw="$PF_VPN_DB_PASSWORD" <<'SQL'
+  -v vpn_runtime_pw="$PF_VPN_DB_PASSWORD" \
+  -v netguard_owner_pw="$PF_NETGUARD_OWNER_DB_PASSWORD" \
+  -v netguard_runtime_pw="$PF_NETGUARD_DB_PASSWORD" <<'SQL'
 -- Nobody creates objects in "public"; every service works in its own schema.
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
@@ -62,4 +66,17 @@ CREATE SCHEMA IF NOT EXISTS vpn AUTHORIZATION pf_vpn_owner;
 GRANT USAGE ON SCHEMA vpn TO pf_vpn;
 ALTER ROLE pf_vpn_owner SET search_path = vpn;
 ALTER ROLE pf_vpn SET search_path = vpn;
+
+-- netguard -------------------------------------------------------------------
+-- pf_netguard also reads the cloud and vpn outboxes (granted by those
+-- services' migrations), so it must exist before they run.
+SELECT format('CREATE ROLE pf_netguard_owner LOGIN PASSWORD %L', :'netguard_owner_pw')
+WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'pf_netguard_owner') \gexec
+SELECT format('CREATE ROLE pf_netguard LOGIN PASSWORD %L', :'netguard_runtime_pw')
+WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'pf_netguard') \gexec
+
+CREATE SCHEMA IF NOT EXISTS netguard AUTHORIZATION pf_netguard_owner;
+GRANT USAGE ON SCHEMA netguard TO pf_netguard;
+ALTER ROLE pf_netguard_owner SET search_path = netguard;
+ALTER ROLE pf_netguard SET search_path = netguard;
 SQL
