@@ -17,7 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/commonvtake/parallelf/services/cloud/internal/audit"
+	audit "github.com/commonvtake/parallelf/pkg/auditlog"
 	"github.com/commonvtake/parallelf/services/cloud/internal/domain"
 )
 

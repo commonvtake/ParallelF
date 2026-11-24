@@ -29,6 +29,13 @@ const (
 	CloudNodesManage     = "cloud.nodes.manage"     // cordon, uncordon and remove nodes
 	CloudQuotasManage    = "cloud.quotas.manage"    // change project quotas
 	CloudAuditRead       = "cloud.audit.read"       // read and verify the cloud audit trail
+
+	VPNResourcesRead  = "vpn.resources.read"  // gateways, policies and the caller's own devices
+	VPNDevicesUse     = "vpn.devices.use"     // enrol, activate, deactivate and revoke one's own devices
+	VPNDevicesManage  = "vpn.devices.manage"  // every user's devices: view, regroup, revoke
+	VPNPoliciesManage = "vpn.policies.manage" // create and delete access policies
+	VPNGatewaysManage = "vpn.gateways.manage" // remove gateways
+	VPNAuditRead      = "vpn.audit.read"      // read and verify the VPN audit trail
 )
 
 //go:embed permissions.json

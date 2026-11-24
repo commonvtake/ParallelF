@@ -44,7 +44,8 @@ func TestAllowedDeniesByDefault(t *testing.T) {
 
 func TestPermissionsForIsSortedUnion(t *testing.T) {
 	got := PermissionsFor([]string{"viewer", "analyst", "unknown"})
-	want := []string{"cloud.audit.read", "cloud.resources.read", "core.projects.read", "system.status.read"}
+	want := []string{"cloud.audit.read", "cloud.resources.read", "core.projects.read", "system.status.read",
+		"vpn.audit.read", "vpn.devices.use", "vpn.resources.read"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("PermissionsFor = %v, want %v", got, want)
 	}
@@ -91,6 +92,12 @@ func TestCloudRoleModel(t *testing.T) {
 		CloudNodesManage:     {"admin", "owner"},
 		CloudQuotasManage:    {"admin", "owner"},
 		CloudAuditRead:       {"admin", "analyst", "owner"},
+		VPNResourcesRead:     {"admin", "analyst", "lab-researcher", "operator", "owner", "viewer"},
+		VPNDevicesUse:        {"admin", "analyst", "lab-researcher", "operator", "owner"},
+		VPNDevicesManage:     {"admin", "owner"},
+		VPNPoliciesManage:    {"admin", "owner"},
+		VPNGatewaysManage:    {"admin", "owner"},
+		VPNAuditRead:         {"admin", "analyst", "owner"},
 	}
 	for perm, want := range cases {
 		var got []string

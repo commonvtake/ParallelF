@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 
@@ -42,6 +43,8 @@ type tokenClaims struct {
 	RealmAccess       struct {
 		Roles []string `json:"roles"`
 	} `json:"realm_access"`
+	AuthTime int64    `json:"auth_time"`
+	AMR      []string `json:"amr"`
 }
 
 // Verify validates rawToken and maps its claims to a Principal.
@@ -78,5 +81,14 @@ func (v *Verifier) Verify(ctx context.Context, rawToken string) (*authn.Principa
 		Email:    claims.Email,
 		Name:     claims.Name,
 		Roles:    roles,
+		AuthTime: authTime(claims.AuthTime),
+		AMR:      claims.AMR,
 	}, nil
+}
+
+func authTime(seconds int64) time.Time {
+	if seconds <= 0 {
+		return time.Time{}
+	}
+	return time.Unix(seconds, 0).UTC()
 }
