@@ -13,6 +13,7 @@ measures how long a revocation takes to reach the gateway.
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import sys
@@ -79,9 +80,24 @@ def call(method: str, path: str, body: Any = None) -> tuple[int, Any]:
         return e.code, json.loads(raw) if raw else None
 
 
+def claims() -> dict[str, Any]:
+    """The access token's claims (payload only; for diagnostics)."""
+    payload = token().split(".")[1]
+    decoded: dict[str, Any] = json.loads(
+        base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4))
+    )
+    return decoded
+
+
 def expect(method: str, path: str, status: int, body: Any = None) -> Any:
     code, out = call(method, path, body)
     if code != status:
+        if isinstance(out, dict) and str(out.get("type", "")).endswith("reauthentication-required"):
+            c = claims()
+            print(
+                f"        token claims: {sorted(c)}; "
+                f"auth_time={c.get('auth_time')} iat={c.get('iat')}"
+            )
         fail(f"{method} {path}: expected {status}, got {code}: {out}")
     return out
 
