@@ -3,6 +3,7 @@ package wg
 import (
 	"context"
 	"errors"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -111,5 +112,27 @@ func TestPeersOfAMissingInterface(t *testing.T) {
 func TestValidKey(t *testing.T) {
 	if !ValidKey(keyA) || ValidKey("abc") || ValidKey(strings.Repeat("A", 42)+"==") {
 		t.Fatal("ValidKey")
+	}
+}
+
+func TestEnsureInterfacePassesTheKeyOnStdin(t *testing.T) {
+	dir := t.TempDir()
+	keyPath := dir + "/private.key"
+	if err := os.WriteFile(keyPath, []byte(keyA+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	run := &fakeRunner{stdin: map[string]string{}}
+	m := &Manager{Iface: "wg-pf0", KeyPath: keyPath, Run: run}
+	if err := m.EnsureInterface(context.Background(), vpnagent.Interface{Address: "10.255.0.1/22", ListenPort: 51820}); err != nil {
+		t.Fatal(err)
+	}
+	set := "wg set wg-pf0 listen-port 51820 private-key /dev/stdin"
+	if run.stdin[set] != keyA {
+		t.Fatalf("calls %v stdin %v", run.calls, run.stdin)
+	}
+	for _, c := range run.calls {
+		if strings.Contains(c, keyPath) || strings.Contains(c, keyA) {
+			t.Fatalf("the key or its path appeared in %q", c)
+		}
 	}
 }

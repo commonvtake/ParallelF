@@ -75,8 +75,14 @@ func (m *Manager) EnsureInterface(ctx context.Context, want vpnagent.Interface) 
 			return err
 		}
 	}
-	if _, err := m.Run.Run(ctx, nil, "wg", "set", m.Iface,
-		"listen-port", strconv.Itoa(want.ListenPort), "private-key", m.KeyPath); err != nil {
+	// The key goes to wg on stdin, like pre-shared keys: no other process
+	// needs to open the key file.
+	private, err := os.ReadFile(m.KeyPath)
+	if err != nil {
+		return fmt.Errorf("read the gateway key: %w", err)
+	}
+	if _, err := m.Run.Run(ctx, bytes.TrimSpace(private), "wg", "set", m.Iface,
+		"listen-port", strconv.Itoa(want.ListenPort), "private-key", "/dev/stdin"); err != nil {
 		return err
 	}
 	if _, err := m.Run.Run(ctx, nil, "ip", "-4", "address", "replace", want.Address, "dev", m.Iface); err != nil {
