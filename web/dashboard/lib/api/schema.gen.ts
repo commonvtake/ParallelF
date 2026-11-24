@@ -136,6 +136,288 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vpn/gateways": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List VPN gateways
+         * @description Requires `vpn.resources.read`.
+         */
+        get: operations["listVpnGateways"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/gateways/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a gateway
+         * @description Only a NOT_READY gateway. Requires `vpn.gateways.manage` and `confirm` equal to its name.
+         */
+        delete: operations["deleteVpnGateway"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List devices
+         * @description The caller's own devices; `scope=all` lists every user's (requires `vpn.devices.manage`).
+         */
+        get: operations["listVpnDevices"];
+        put?: never;
+        /**
+         * Enrol a device
+         * @description Send only the device's public key; the private key never leaves the device. The response carries the client configuration and, when asked for, a pre-shared key that is shown only this once. Requires `vpn.devices.use`.
+         */
+        post: operations["createVpnDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/devices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a device
+         * @description The caller's own device, or any device for `vpn.devices.manage`.
+         */
+        get: operations["getVpnDevice"];
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a device
+         * @description Removes the peer from the gateway and ends its connections. Requires `confirm` equal to the device name.
+         */
+        delete: operations["revokeVpnDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/devices/{id}/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a device's client configuration
+         * @description Everything except the private key and the pre-shared key.
+         */
+        get: operations["getVpnDeviceConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/devices/{id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        /** Get a device's traffic */
+        get: operations["getVpnDeviceMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/devices/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate a device
+         * @description Allows the device to send traffic until the activation expires; the gateway enforces the expiry in the kernel. Only the owner may activate, and only within `PF_VPN_MAX_AUTH_AGE` of signing in (403 `reauthentication-required` otherwise).
+         */
+        post: operations["activateVpnDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/devices/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deactivate a device */
+        post: operations["deactivateVpnDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/devices/{id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a device's groups
+         * @description Requires `vpn.devices.manage`.
+         */
+        put: operations["setVpnDeviceGroups"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List access policies
+         * @description In evaluation order.
+         */
+        get: operations["listVpnPolicies"];
+        put?: never;
+        /**
+         * Create an access policy
+         * @description Requires `vpn.policies.manage`.
+         */
+        post: operations["createVpnPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/policies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete an access policy
+         * @description Requires `vpn.policies.manage` and `confirm` equal to its name.
+         */
+        delete: operations["deleteVpnPolicy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the VPN audit trail
+         * @description Newest first. Requires `vpn.audit.read`.
+         */
+        get: operations["listVpnAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vpn/audit/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verify the VPN audit chain
+         * @description Requires `vpn.audit.read`.
+         */
+        get: operations["verifyVpnAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/info": {
         parameters: {
             query?: never;
@@ -962,6 +1244,139 @@ export interface components {
             /** Format: date-time */
             checked_at: string;
         };
+        VPNGateway: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @enum {string} */
+            status: "READY" | "NOT_READY";
+            /** @description The gateway's WireGuard public key (base64). */
+            public_key: string;
+            /** @description host:port devices dial. */
+            endpoint: string;
+            listen_port: number;
+            /** @description The gateway's tunnel address with prefix, e.g. 10.255.0.1/22. */
+            address: string;
+            agent_version: string;
+            /** @description The desired-state revision the gateway last applied. */
+            applied_revision: number;
+            /** @description The current desired-state revision. */
+            revision: number;
+            apply_error?: string;
+            /** Format: date-time */
+            registered_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+        };
+        VPNGatewayList: {
+            items: components["schemas"]["VPNGateway"][];
+        };
+        VPNDevice: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            owner_subject: string;
+            owner_name: string;
+            public_key: string;
+            /** @description Tunnel IPv4 address. */
+            address: string;
+            groups: string[];
+            /** @description Whether the peer uses a pre-shared key (the key itself is never returned again). */
+            preshared_key: boolean;
+            /** @enum {string} */
+            state: "PENDING" | "ENROLLED" | "REVOKED" | "EXPIRED";
+            /** @description Whether the device may send traffic now. */
+            active: boolean;
+            /** Format: date-time */
+            active_until?: string;
+            /** @enum {string} */
+            connection: "online" | "idle" | "offline";
+            /** Format: date-time */
+            last_handshake_at?: string;
+            endpoint?: string;
+            rx_bytes: number;
+            tx_bytes: number;
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            ended_at?: string;
+        };
+        VPNDeviceList: {
+            items: components["schemas"]["VPNDevice"][];
+        };
+        VPNDeviceCreate: {
+            name: components["schemas"]["ResourceName"];
+            /** @description Base64 WireGuard (X25519) public key. */
+            public_key: string;
+            /** @default false */
+            preshared_key: boolean;
+        };
+        VPNClientConfig: {
+            address: string;
+            gateway_public_key: string;
+            endpoint: string;
+            allowed_ips: string[];
+            persistent_keepalive: number;
+            /** @description Only in the enrolment response, and only when requested. */
+            preshared_key?: string;
+        };
+        VPNEnrolment: {
+            device: components["schemas"]["VPNDevice"];
+            config: components["schemas"]["VPNClientConfig"];
+        };
+        VPNActivation: {
+            /** @description Length of the activation; the server's default when absent. */
+            ttl_seconds?: number;
+        };
+        VPNGroups: {
+            groups: string[];
+        };
+        VPNPolicy: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            priority: number;
+            /** @enum {string} */
+            action: "allow" | "deny";
+            groups: string[];
+            /** @description "platform" (the gateway's tunnel address) or IPv4 CIDRs. */
+            destinations: string[];
+            /** @enum {string} */
+            protocol: "tcp" | "udp" | "icmp" | "any";
+            ports: string[];
+            description: string;
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        VPNPolicyList: {
+            items: components["schemas"]["VPNPolicy"][];
+        };
+        VPNPolicyCreate: {
+            name: components["schemas"]["ResourceName"];
+            priority: number;
+            /** @enum {string} */
+            action: "allow" | "deny";
+            groups: string[];
+            destinations: string[];
+            /** @enum {string} */
+            protocol: "tcp" | "udp" | "icmp" | "any";
+            ports?: string[];
+            description?: string;
+        };
+        VPNTrafficPoint: {
+            /** Format: date-time */
+            at: string;
+            rx_bytes: number;
+            tx_bytes: number;
+        };
+        VPNMetrics: {
+            /** @enum {string} */
+            window: "15m" | "1h" | "6h" | "24h";
+            points: components["schemas"]["VPNTrafficPoint"][];
+        };
     };
     responses: {
         /** @description The request is malformed. */
@@ -1249,6 +1664,436 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listVpnGateways: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every gateway. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNGatewayList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteVpnGateway: {
+        parameters: {
+            query: {
+                /** @description The resource's name, repeated to confirm a destructive operation. */
+                confirm: components["parameters"]["Confirm"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The gateway was removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            428: components["responses"]["ConfirmationRequired"];
+        };
+    };
+    listVpnDevices: {
+        parameters: {
+            query?: {
+                scope?: "mine" | "all";
+                /** @description `ended` also lists revoked and expired devices. */
+                include?: "ended";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Devices, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNDeviceList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createVpnDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VPNDeviceCreate"];
+            };
+        };
+        responses: {
+            /** @description The device and its client configuration. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNEnrolment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getVpnDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The device. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNDevice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revokeVpnDevice: {
+        parameters: {
+            query: {
+                /** @description The resource's name, repeated to confirm a destructive operation. */
+                confirm: components["parameters"]["Confirm"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The revoked device. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNDevice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            428: components["responses"]["ConfirmationRequired"];
+        };
+    };
+    getVpnDeviceConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The configuration. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNClientConfig"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getVpnDeviceMetrics: {
+        parameters: {
+            query?: {
+                window?: components["parameters"]["MetricWindow"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bytes received and sent per sample. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNMetrics"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    activateVpnDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["VPNActivation"];
+            };
+        };
+        responses: {
+            /** @description The active device. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNDevice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    deactivateVpnDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The device. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNDevice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    setVpnDeviceGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VPNGroups"];
+            };
+        };
+        responses: {
+            /** @description The device. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNDevice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listVpnPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNPolicyList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createVpnPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VPNPolicyCreate"];
+            };
+        };
+        responses: {
+            /** @description The policy. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNPolicy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    deleteVpnPolicy: {
+        parameters: {
+            query: {
+                /** @description The resource's name, repeated to confirm a destructive operation. */
+                confirm: components["parameters"]["Confirm"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ResourceID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            428: components["responses"]["ConfirmationRequired"];
+        };
+    };
+    listVpnAudit: {
+        parameters: {
+            query?: {
+                resource_type?: string;
+                resource_id?: string;
+                limit?: number;
+                before?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of entries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    verifyVpnAudit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The verification result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditVerification"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     getAIInfo: {
