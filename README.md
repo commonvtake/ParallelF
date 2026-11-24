@@ -6,9 +6,9 @@ ParallelF is a self-hosted platform that will combine a miniature cloud, a WireG
 
 [![ci](https://github.com/commonvtake/ParallelF/actions/workflows/ci.yml/badge.svg)](https://github.com/commonvtake/ParallelF/actions/workflows/ci.yml)
 
-## Status: Phase 2, ParallelF Cloud
+## Status: Phase 3, ParallelF VPN
 
-The platform foundation and the first subsystem, ParallelF Cloud, are in place. The remaining subsystems are not built yet, and the dashboard says so on each of their pages.
+The platform foundation, ParallelF Cloud and ParallelF VPN are in place. The remaining subsystems are not built yet, and the dashboard says so on each of their pages.
 
 | Area | State |
 |---|---|
@@ -17,8 +17,9 @@ The platform foundation and the first subsystem, ParallelF Cloud, are in place. 
 | `pf-core` (Go): caller profile, projects, transactional event outbox on PostgreSQL | Working |
 | `pf-aid` (Python/FastAPI): service foundation with an authenticated capability listing | Working (no AI features) |
 | ParallelF Cloud: KVM VMs and Docker containers on a registered host, scheduling, quotas, NAT/isolated/lab networks, metrics, audit log ([guide](docs/cloud.md)) | Working on one host |
-| Dashboard: Overview (live status), Cloud, and Settings (profile, roles, projects, session) | Working |
-| Dashboard: VPN, Network Monitoring, Security Lab, AI Investigator | Not implemented; labelled as such |
+| ParallelF VPN: WireGuard enrolment with device-side keys, step-up activation that expires in the kernel, default-deny policies, sub-second revocation ([guide](docs/vpn.md)) | Working on one gateway |
+| Dashboard: Overview, Cloud, VPN, and Settings | Working |
+| Dashboard: Network Monitoring, Security Lab, AI Investigator | Not implemented; labelled as such |
 | Event bus (NATS JetStream), MFA policy, platform-wide audit log, observability stack | Not implemented; see the [roadmap](docs/architecture/10-roadmap-and-acceptance-criteria.md) |
 
 ## What runs locally
@@ -32,10 +33,14 @@ flowchart LR
     G --> C["pf-core<br/>Go"]
     G --> CL["pf-cloudd<br/>Go"]
     G --> A["pf-aid<br/>Python / FastAPI"]
-    C --> P[("PostgreSQL<br/>schemas core, cloud")]
+    C --> P[("PostgreSQL<br/>schemas core, cloud, vpn")]
+    G --> VP["pf-vpnd<br/>Go"]
     CL --> P
+    VP --> P
     N["pf-node-agent<br/>on the compute host"] -->|"desired-state sync"| CL
     N --> V["libvirt / KVM, Docker"]
+    WA["pf-wg-agent<br/>on the gateway host"] -->|"long-poll sync"| VP
+    WA --> WG["WireGuard, nftables"]
     G -. "signing keys (JWKS)" .-> K
     C -. "signing keys (JWKS)" .-> K
     A -. "signing keys (JWKS)" .-> K
@@ -62,6 +67,14 @@ make agent-install      # the node agent under systemd (sudo)
 make verify-cloud       # one VM: create, run, ping, stop, start, delete
 ```
 
+To use the VPN, make the host a WireGuard gateway ([VPN guide](docs/vpn.md)):
+
+```sh
+make vpn-gateway-setup  # wireguard-tools, nftables, conntrack (sudo, once)
+make wg-agent-install   # the gateway agent under systemd (sudo)
+make verify-vpn         # enrol a device, connect, activate, revoke
+```
+
 Then open <http://localhost:3000> and sign in as `owner` (full access) or `viewer` (read-only). Their generated passwords are `PF_DEV_OWNER_PASSWORD` and `PF_DEV_VIEWER_PASSWORD` in `.env`.
 
 | URL | What |
@@ -72,7 +85,7 @@ Then open <http://localhost:3000> and sign in as `owner` (full access) or `viewe
 
 `make down` stops the stack and keeps its data; `make clean` also deletes the data. `make help` lists every task.
 
-The first `make up` downloads base images and builds five images, which takes several minutes. All ports are published on `127.0.0.1` only.
+The first `make up` downloads base images and builds six images, which takes several minutes. All ports are published on `127.0.0.1` only.
 
 ## Repository layout
 
@@ -84,6 +97,8 @@ The first `make up` downloads base images and builds five images, which takes se
 | `services/core/` | `pf-core` (Go) and its SQL migrations |
 | `services/cloud/` | `pf-cloudd` (Go): cloud API, scheduler, store and migrations |
 | `services/node-agent/` | `pf-node-agent` (Go, standard library only): runs on compute hosts, drives libvirt and Docker |
+| `services/vpn/` | `pf-vpnd` (Go): devices, activations, policies, gateway sync, store and migrations |
+| `services/vpn-agent/` | `pf-wg-agent` (Go, standard library only): runs on the gateway, drives WireGuard and nftables |
 | `services/gateway/` | `pf-gateway` (Go) |
 | `services/ai/` | `pf-aid` (Python, FastAPI) |
 | `python/pf_common/` | Shared Python package: settings, logging, authentication, FastAPI application factory |

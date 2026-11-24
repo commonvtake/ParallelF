@@ -17,5 +17,6 @@ Format: [MADR](https://adr.github.io/madr/)-style, short. One decision per file.
 | [0011](0011-keycloak-oidc-provider.md) | Keycloak as the OpenID Connect provider | Accepted |
 | [0012](0012-single-go-module-and-make.md) | One Go module and Make for Phase 1 | Accepted |
 | [0013](0013-cloud-phase-2-agent-protocol-and-runtimes.md) | Cloud Phase 2: HTTP agent protocol, CLI-driven runtimes, one runtime per network | Accepted |
+| [0014](0014-vpn-phase-3-long-poll-and-cli-firewall.md) | VPN Phase 3: long-poll sync, CLI-driven WireGuard and nftables | Accepted |
 
 Template: copy `0000-template.md`, increment the number, keep it under one page.
