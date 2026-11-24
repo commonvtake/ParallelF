@@ -42,8 +42,14 @@ message encoded as protojson (`content-type: application/json`).
 | `parallelf.vpn.v1.DeviceDeactivated` | `pf.vpn.evt.device.deactivated` | pf-vpnd | Written to the outbox |
 | `parallelf.vpn.v1.PeerConnectionChanged` | `pf.vpn.evt.peer.connection_changed` | pf-vpnd | Written to the outbox |
 | `parallelf.vpn.v1.PolicyChanged` | `pf.vpn.evt.policy.changed` | pf-vpnd | Written to the outbox |
+| `parallelf.netguard.v1.SensorRegistered` | `pf.netguard.evt.sensor.registered` | pf-netguardd | Written to the outbox |
+| `parallelf.netguard.v1.AlertRaised` | `pf.netguard.evt.alert.raised` | pf-netguardd | Written to the outbox |
+| `parallelf.netguard.v1.AlertStatusChanged` | `pf.netguard.evt.alert.status_changed` | pf-netguardd | Written to the outbox |
+| `parallelf.netguard.v1.IncidentChanged` | `pf.netguard.evt.incident.changed` | pf-netguardd | Written to the outbox |
+| `parallelf.netguard.v1.EvidenceAdded` | `pf.netguard.evt.evidence.added` | pf-netguardd | Written to the outbox |
+| `parallelf.netguard.v1.ScopeChanged` | `pf.netguard.evt.scope.changed` | pf-netguardd | Written to the outbox |
 
-Cloud subjects are `node/<id>`, `network/<id>` and `workload/<id>`; VPN subjects are `gateway/<id>`, `device/<id>` and `policy/<id>`. `DeviceCreated` carries the tunnel address and owner, which NetGuard uses to attribute tunnel traffic to a user and device. Workload states and network kinds are carried as strings (the values in the OpenAPI contract), so adding a state is not a breaking change.
+Cloud subjects are `node/<id>`, `network/<id>` and `workload/<id>`; VPN subjects are `gateway/<id>`, `device/<id>` and `policy/<id>`. `DeviceCreated` carries the tunnel address and owner, which NetGuard uses to attribute tunnel traffic to a user and device. NetGuard subjects are `sensor/<id>`, `alert/<id>`, `incident/<id>` (evidence events too) and `scope/<id>`. Until the relay exists, pf-netguardd reads `cloud.outbox` and `vpn.outbox` directly (read-only grants) to attribute traffic; it decodes the protojson payloads field by field and applies each row exactly once. Workload states and network kinds are carried as strings (the values in the OpenAPI contract), so adding a state is not a breaking change.
 
 ## Delivery
 

@@ -9,6 +9,7 @@
 #   postgres   localhost:5432          database (PF_POSTGRES_HOST_PORT)
 #   cloud      localhost:9102          node-agent endpoint of pf-cloudd
 #   vpn        localhost:9103          gateway-agent endpoint of pf-vpnd
+#   netguard   localhost:9104          sensor endpoint of pf-netguardd
 
 name: parallelf
 
@@ -65,6 +66,8 @@ services:
       PF_CLOUD_DB_PASSWORD: ${PF_CLOUD_DB_PASSWORD:?}
       PF_VPN_OWNER_DB_PASSWORD: ${PF_VPN_OWNER_DB_PASSWORD:?run "make init" to add the new settings to .env}
       PF_VPN_DB_PASSWORD: ${PF_VPN_DB_PASSWORD:?}
+      PF_NETGUARD_OWNER_DB_PASSWORD: ${PF_NETGUARD_OWNER_DB_PASSWORD:?run "make init" to add the new settings to .env}
+      PF_NETGUARD_DB_PASSWORD: ${PF_NETGUARD_DB_PASSWORD:?}
     volumes:
       - ../postgres/init:/init:ro
     logging: *logging
@@ -117,6 +120,23 @@ services:
       - /migrations
       - -database
       - postgres://pf_vpn_owner:${PF_VPN_OWNER_DB_PASSWORD:?}@postgres:5432/parallelf?sslmode=disable&search_path=vpn
+      - up
+    logging: *logging
+
+  # Applies pf-netguardd's schema migrations.
+  migrate-netguard:
+    image: migrate/migrate:v4.18.3
+    restart: "no"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    volumes:
+      - ../../services/netguard/migrations:/migrations:ro
+    command:
+      - -path
+      - /migrations
+      - -database
+      - postgres://pf_netguard_owner:${PF_NETGUARD_OWNER_DB_PASSWORD:?}@postgres:5432/parallelf?sslmode=disable&search_path=netguard
       - up
     logging: *logging
 
@@ -262,6 +282,50 @@ services:
     security_opt: ["no-new-privileges:true"]
     logging: *logging
 
+  # ParallelF NetGuard. Port 9004 serves the user API (through the gateway);
+  # port 9104 serves the network sensor on the host. It reads the cloud and
+  # vpn outboxes (read-only) to attribute traffic, so their migrations,
+  # which grant that, come first.
+  netguard:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/go-service.Dockerfile
+      args:
+        SERVICE: netguard
+        BINARY: pf-netguardd
+        VERSION: ${PF_VERSION:-dev}
+    restart: unless-stopped
+    depends_on:
+      migrate-netguard:
+        condition: service_completed_successfully
+      migrate-cloud:
+        condition: service_completed_successfully
+      migrate-vpn:
+        condition: service_completed_successfully
+    environment:
+      <<: *oidc-env
+      PF_HTTP_ADDR: ":9004"
+      PF_SENSOR_ADDR: ":9104"
+      PF_LOG_LEVEL: ${PF_LOG_LEVEL:-info}
+      PF_DATABASE_URL: postgres://pf_netguard:${PF_NETGUARD_DB_PASSWORD:?}@postgres:5432/parallelf?sslmode=disable
+      PF_NG_JOIN_TOKEN: ${PF_NG_JOIN_TOKEN:?run "make init" to add the new settings to .env}
+      PF_NG_SCOPE_SIGNING_KEY: ${PF_NG_SCOPE_SIGNING_KEY:?run "make init" to add the new settings to .env}
+      PF_NG_MAX_AUTH_AGE: ${PF_NG_MAX_AUTH_AGE:-15m}
+      # The development realm's password-grant CLI client issues tokens
+      # without auth_time; it exists only in the local realm.
+      PF_NG_STEP_UP_EXEMPT_CLIENTS: parallelf-dev-cli
+    ports:
+      - "127.0.0.1:9104:9104"
+    healthcheck:
+      test: ["CMD", "/service", "-healthcheck", "http://127.0.0.1:9004/readyz"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
   ai:
     build:
       context: ../..
@@ -302,6 +366,8 @@ services:
         condition: service_healthy
       vpn:
         condition: service_healthy
+      netguard:
+        condition: service_healthy
       ai:
         condition: service_healthy
     environment:
@@ -311,6 +377,7 @@ services:
       PF_UPSTREAM_CORE_URL: http://core:9001
       PF_UPSTREAM_CLOUD_URL: http://cloud:9002
       PF_UPSTREAM_VPN_URL: http://vpn:9003
+      PF_UPSTREAM_NETGUARD_URL: http://netguard:9004
       PF_UPSTREAM_AI_URL: http://ai:9006
     ports:
       - "127.0.0.1:8000:8000"

@@ -97,7 +97,7 @@ func (a *API) Register(mux *http.ServeMux, authenticate httpx.Middleware) {
 	handle("GET "+base+"/incidents/{id}", authz.NetworkResourcesRead, a.getIncident)
 	handle("PATCH "+base+"/incidents/{id}", authz.NetworkAlertsTriage, a.updateIncident)
 	handle("POST "+base+"/incidents/{id}/evidence", authz.NetworkAlertsTriage, a.addEvidence)
-	handle("GET "+base+"/incidents/{id}/evidence/verify", authz.NetworkResourcesRead, a.verifyEvidence)
+	handle("GET "+base+"/incidents/{id}/verify-evidence", authz.NetworkResourcesRead, a.verifyEvidence)
 	handle("GET "+base+"/incidents/{id}/evidence/{eid}", authz.NetworkResourcesRead, a.evidenceContent)
 
 	handle("GET "+base+"/scopes", authz.NetworkResourcesRead, a.listScopes)

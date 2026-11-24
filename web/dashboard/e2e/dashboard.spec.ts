@@ -64,7 +64,7 @@ test("every section is reachable and unbuilt sections say so", async ({ page }) 
   const sections = [
     { label: "Cloud", path: "/cloud", implemented: true },
     { label: "VPN", path: "/vpn", implemented: true },
-    { label: "Network Monitoring", path: "/network", implemented: false },
+    { label: "Network Monitoring", path: "/network", implemented: true },
     { label: "Security Lab", path: "/lab", implemented: false },
     { label: "AI Investigator", path: "/ai", implemented: false },
     { label: "Settings", path: "/settings", implemented: true },

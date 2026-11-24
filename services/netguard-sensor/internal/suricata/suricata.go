@@ -24,8 +24,8 @@ import (
 // traffic only, so the IDS path can be verified end to end without
 // generating anything harmful.
 const CanaryRules = `# ParallelF canary signatures: match only deliberate self-test traffic.
-alert http any any -> any any (msg:"PARALLELF canary: IDS self-test URI"; flow:established,to_server; http.uri; content:"/pf-ng-ids-canary"; sid:9100001; rev:1; classtype:misc-activity;)
-alert dns any any -> any any (msg:"PARALLELF canary: IDS self-test DNS query"; dns.query; content:"pf-ng-ids-canary"; nocase; sid:9100002; rev:1; classtype:misc-activity;)
+alert http any any -> any any (msg:"PARALLELF canary: IDS self-test URI"; flow:established,to_server; http.uri; content:"/pf-ng-ids-canary"; sid:9100001; rev:1;)
+alert dns any any -> any any (msg:"PARALLELF canary: IDS self-test DNS query"; dns.query; content:"pf-ng-ids-canary"; nocase; sid:9100002; rev:1;)
 `
 
 var ifacePattern = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,15}$`)
@@ -177,16 +177,15 @@ host-mode: sniffer-only
 
 // Supervisor runs one Suricata process.
 type Supervisor struct {
-	Binary   string
-	DataDir  string
-	ETRules  string // optional extra rules file (ET Open via suricata-update)
-	Logger   *slog.Logger
-	mu       sync.Mutex
-	cmd      *exec.Cmd
-	ifaces   []string
-	exited   chan struct{}
-	lastErr  string
-	startErr error
+	Binary  string
+	DataDir string
+	ETRules string // optional extra rules file (ET Open via suricata-update)
+	Logger  *slog.Logger
+	mu      sync.Mutex
+	cmd     *exec.Cmd
+	ifaces  []string
+	exited  chan struct{}
+	lastErr string
 }
 
 // LogDir is where Suricata writes eve.json.

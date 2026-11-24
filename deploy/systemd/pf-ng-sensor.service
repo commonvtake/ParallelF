@@ -1,0 +1,34 @@
+# ParallelF network sensor: runs Suricata on ParallelF's own interfaces
+# (wg-pf0 and the Cloud bridges pfbr-*), ships normalized events to
+# pf-netguardd and runs discovery scopes pf-netguardd signed.
+#
+# Installed by `make ng-sensor-install`. Settings live in
+# /etc/parallelf/ng-sensor.env (see scripts/dev/ng-sensor-install.sh).
+[Unit]
+Description=ParallelF network sensor (Suricata supervisor)
+Documentation=https://github.com/commonvtake/ParallelF/blob/main/docs/netguard.md
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/parallelf/ng-sensor.env
+ExecStart=/usr/local/bin/pf-ng-sensor
+Restart=always
+RestartSec=3
+# The sensor stops Suricata itself after its last delivery.
+KillMode=mixed
+TimeoutStopSec=30
+
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=full
+ReadWritePaths=/var/lib/parallelf
+PrivateTmp=yes
+# Packet capture (AF_PACKET with mmap), and ICMP echo for discovery.
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_IPC_LOCK CAP_SYS_NICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_IPC_LOCK CAP_SYS_NICE
+MemoryMax=1G
+
+[Install]
+WantedBy=multi-user.target

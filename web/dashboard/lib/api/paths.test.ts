@@ -10,6 +10,7 @@ describe("buildUpstreamPath", () => {
     );
     expect(buildUpstreamPath(["system", "status"])).toBe("/api/v1/system/status");
     expect(buildUpstreamPath(["ai", "info"])).toBe("/api/v1/ai/info");
+    expect(buildUpstreamPath(["network", "alerts"])).toBe("/api/v1/network/alerts");
     expect(buildUpstreamPath(["cloud", "workloads", "0193a7c2-5b1e-7c3a-9f10-2a4b6c8d0e1f", "stop"])).toBe(
       "/api/v1/cloud/workloads/0193a7c2-5b1e-7c3a-9f10-2a4b6c8d0e1f/stop",
     );

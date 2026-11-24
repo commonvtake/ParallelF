@@ -64,6 +64,7 @@ migrate: ## Apply pending migrations to the running database
 	$(COMPOSE) run --rm migrate-core
 	$(COMPOSE) run --rm migrate-cloud
 	$(COMPOSE) run --rm migrate-vpn
+	$(COMPOSE) run --rm migrate-netguard
 
 # --- Compute host (ParallelF Cloud) -----------------------------------------
 
@@ -132,6 +133,41 @@ wg-agent-uninstall: ## Stop and remove the gateway agent, its interface and fire
 .PHONY: verify-vpn
 verify-vpn: ## One gateway, one device: enrol, connect, activate, deny, revoke (uses sudo for the namespace)
 	@python3 scripts/dev/verify_vpn.py
+
+# --- Network sensor (ParallelF NetGuard) ----------------------------------------
+
+NG_SENSOR_BIN := bin/pf-ng-sensor
+
+.PHONY: ng-sensor-setup
+ng-sensor-setup: ## Install Suricata on this host and disable its own service (sudo)
+	sudo scripts/dev/ng-sensor-setup.sh
+
+.PHONY: ng-sensor-build
+ng-sensor-build: ## Build the network sensor into bin/
+	CGO_ENABLED=0 go build -trimpath -o $(NG_SENSOR_BIN) ./services/netguard-sensor/cmd/pf-ng-sensor
+
+.PHONY: ng-sensor-check
+ng-sensor-check: ng-sensor-build ## Show the Suricata version and the interfaces the sensor would monitor
+	sudo env PF_NGS_NETGUARD_URL=http://localhost:9104 $(NG_SENSOR_BIN) -check
+
+.PHONY: ng-sensor
+ng-sensor: ng-sensor-build ## Run the sensor in the foreground (Ctrl-C stops it and Suricata)
+	sudo env PF_NGS_NETGUARD_URL=http://localhost:9104 PF_NGS_JOIN_TOKEN=$(PF_NG_JOIN_TOKEN) \
+		PF_LOG_LEVEL=$(PF_LOG_LEVEL) $(NG_SENSOR_BIN)
+
+.PHONY: ng-sensor-install
+ng-sensor-install: ng-sensor-build ## Install and start the sensor as a systemd service
+	sudo env PF_NG_JOIN_TOKEN=$(PF_NG_JOIN_TOKEN) scripts/dev/ng-sensor-install.sh $(NG_SENSOR_BIN)
+
+.PHONY: ng-sensor-uninstall
+ng-sensor-uninstall: ## Stop and remove the sensor service (Suricata stops with it)
+	-sudo systemctl disable --now pf-ng-sensor
+	sudo rm -f /etc/systemd/system/pf-ng-sensor.service /usr/local/bin/pf-ng-sensor
+	sudo systemctl daemon-reload
+
+.PHONY: verify-netguard
+verify-netguard: ## IDS canary, port scan, DNS anomaly, attribution, triage and evidence over the VPN (sudo for the namespace)
+	@python3 scripts/dev/verify_netguard.py
 
 # --- Code generation ---------------------------------------------------------
 

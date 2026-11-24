@@ -46,7 +46,7 @@ func (f *fakeStore) ActiveScopes(context.Context) ([]ngsensor.SignedScope, error
 	return []ngsensor.SignedScope{{Document: "ZG9j", Signature: "c2ln"}}, nil
 }
 
-func call(t *testing.T, h http.Handler, path, token string, body any) (*http.Response, []byte) {
+func call(t *testing.T, h http.Handler, path, token string, body any) (int, []byte) {
 	t.Helper()
 	raw, _ := json.Marshal(body)
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(raw))
@@ -57,8 +57,7 @@ func call(t *testing.T, h http.Handler, path, token string, body any) (*http.Res
 	}
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
-	out, _ := io.ReadAll(rec.Result().Body)
-	return rec.Result(), out
+	return rec.Code, rec.Body.Bytes()
 }
 
 func TestRegisterAndIngest(t *testing.T) {
@@ -68,12 +67,12 @@ func TestRegisterAndIngest(t *testing.T) {
 	mux := http.NewServeMux()
 	api.Register(mux)
 
-	if resp, _ := call(t, mux, ngsensor.PathRegister, "wrong", ngsensor.RegisterRequest{Name: "host"}); resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("wrong join token: %d", resp.StatusCode)
+	if code, _ := call(t, mux, ngsensor.PathRegister, "wrong", ngsensor.RegisterRequest{Name: "host"}); code != http.StatusUnauthorized {
+		t.Fatalf("wrong join token: %d", code)
 	}
-	resp, body := call(t, mux, ngsensor.PathRegister, "join-token-join-token-123", ngsensor.RegisterRequest{Name: "host", Engine: "Suricata 7.0.3"})
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("register: %d %s", resp.StatusCode, body)
+	code, body := call(t, mux, ngsensor.PathRegister, "join-token-join-token-123", ngsensor.RegisterRequest{Name: "host", Engine: "Suricata 7.0.3"})
+	if code != http.StatusOK {
+		t.Fatalf("register: %d %s", code, body)
 	}
 	var reg ngsensor.RegisterResponse
 	_ = json.Unmarshal(body, &reg)
@@ -93,10 +92,10 @@ func TestRegisterAndIngest(t *testing.T) {
 	badKind.Kind, badKind.RawSHA256 = "exploit", strings.Repeat("c", 64)
 	future := good
 	future.Time, future.RawSHA256 = now.Add(48*time.Hour), strings.Repeat("d", 64)
-	resp, body = call(t, mux, ngsensor.PathIngest, reg.Credential, ngsensor.IngestRequest{Engine: "Suricata", Interfaces: []string{"wg-pf0", "bad iface"},
+	code, body = call(t, mux, ngsensor.PathIngest, reg.Credential, ngsensor.IngestRequest{Engine: "Suricata", Interfaces: []string{"wg-pf0", "bad iface"},
 		Events: []ngsensor.Event{good, badIP, badKind, future}})
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("ingest: %d %s", resp.StatusCode, body)
+	if code != http.StatusOK {
+		t.Fatalf("ingest: %d %s", code, body)
 	}
 	var ing ngsensor.IngestResponse
 	_ = json.Unmarshal(body, &ing)
@@ -107,8 +106,8 @@ func TestRegisterAndIngest(t *testing.T) {
 	if len(got.Events) != 1 || len(got.Interfaces) != 1 || got.Events[0].Details["Bad Key!"] != "" {
 		t.Fatalf("%+v", got)
 	}
-	if resp, _ := call(t, mux, ngsensor.PathIngest, "pfng_unknown", ngsensor.IngestRequest{}); resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("unknown credential: %d", resp.StatusCode)
+	if code, _ := call(t, mux, ngsensor.PathIngest, "pfng_unknown", ngsensor.IngestRequest{}); code != http.StatusUnauthorized {
+		t.Fatalf("unknown credential: %d", code)
 	}
 }
 

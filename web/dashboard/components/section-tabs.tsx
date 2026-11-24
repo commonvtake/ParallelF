@@ -33,6 +33,14 @@ export function SectionTabs({
   );
 }
 
+export const NETWORK_TABS = [
+  { href: "/network", label: "Alerts" },
+  { href: "/network/incidents", label: "Incidents" },
+  { href: "/network/assets", label: "Assets" },
+  { href: "/network/scopes", label: "Discovery scopes" },
+  { href: "/network/audit", label: "Audit" },
+] as const;
+
 export const VPN_TABS = [
   { href: "/vpn", label: "Devices" },
   { href: "/vpn/policies", label: "Policies" },

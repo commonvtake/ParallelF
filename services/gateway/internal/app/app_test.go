@@ -63,18 +63,19 @@ func newUpstream(t *testing.T, name string, checks map[string]string) *upstream 
 }
 
 type gatewayHarness struct {
-	handler              http.Handler
-	core, cloud, vpn, ai *upstream
-	jwks                 *httptest.Server
+	handler                        http.Handler
+	core, cloud, vpn, netguard, ai *upstream
+	jwks                           *httptest.Server
 }
 
 func newGateway(t *testing.T) *gatewayHarness {
 	t.Helper()
 	h := &gatewayHarness{
-		core:  newUpstream(t, "pf-core", map[string]string{"postgres": "ok"}),
-		cloud: newUpstream(t, "pf-cloudd", map[string]string{"postgres": "ok"}),
-		vpn:   newUpstream(t, "pf-vpnd", map[string]string{"postgres": "ok"}),
-		ai:    newUpstream(t, "pf-aid", nil),
+		core:     newUpstream(t, "pf-core", map[string]string{"postgres": "ok"}),
+		cloud:    newUpstream(t, "pf-cloudd", map[string]string{"postgres": "ok"}),
+		vpn:      newUpstream(t, "pf-vpnd", map[string]string{"postgres": "ok"}),
+		netguard: newUpstream(t, "pf-netguardd", map[string]string{"postgres": "ok"}),
+		ai:       newUpstream(t, "pf-aid", nil),
 		jwks: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			httpx.WriteJSON(w, http.StatusOK, map[string]any{"keys": []any{}})
 		})),
@@ -89,11 +90,12 @@ func newGateway(t *testing.T) *gatewayHarness {
 		return u
 	}
 	cfg := config.Config{
-		CoreURL:  mustURL(h.core.server.URL),
-		CloudURL: mustURL(h.cloud.server.URL),
-		VPNURL:   mustURL(h.vpn.server.URL),
-		AIURL:    mustURL(h.ai.server.URL),
-		OIDC:     authn.OIDCSettings{Issuer: "http://issuer.test", JWKSURL: h.jwks.URL, Audience: "parallelf-api"},
+		CoreURL:     mustURL(h.core.server.URL),
+		CloudURL:    mustURL(h.cloud.server.URL),
+		VPNURL:      mustURL(h.vpn.server.URL),
+		NetGuardURL: mustURL(h.netguard.server.URL),
+		AIURL:       mustURL(h.ai.server.URL),
+		OIDC:        authn.OIDCSettings{Issuer: "http://issuer.test", JWKSURL: h.jwks.URL, Audience: "parallelf-api"},
 	}
 	h.handler = NewHandler(cfg, tokenVerifier{}, proxy.NewTransport(), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	return h
@@ -129,7 +131,7 @@ func TestGatewayHealthIsUnauthenticated(t *testing.T) {
 
 func TestGatewayRejectsUnauthenticatedAPIRequestsBeforeProxying(t *testing.T) {
 	h := newGateway(t)
-	paths := []string{"/api/v1/core/projects", "/api/v1/cloud/workloads", "/api/v1/vpn/devices", "/api/v1/ai/info", "/api/v1/system/status"}
+	paths := []string{"/api/v1/core/projects", "/api/v1/cloud/workloads", "/api/v1/vpn/devices", "/api/v1/network/alerts", "/api/v1/ai/info", "/api/v1/system/status"}
 	for _, path := range paths {
 		for name, token := range map[string]string{"no token": "", "invalid token": "garbage"} {
 			rec := h.get(path, token, nil)
@@ -238,7 +240,7 @@ func TestSystemStatus(t *testing.T) {
 		t.Errorf("overall status = %q, want ok: %+v", report.Status, report.Components)
 	}
 	components := componentByName(report)
-	for _, name := range []string{ServiceName, "core", "core/postgres", "cloud", "cloud/postgres", "vpn", "vpn/postgres", "ai", "identity-provider"} {
+	for _, name := range []string{ServiceName, "core", "core/postgres", "cloud", "cloud/postgres", "vpn", "vpn/postgres", "netguard", "netguard/postgres", "ai", "identity-provider"} {
 		if c, ok := components[name]; !ok || c.Status != status.OK {
 			t.Errorf("component %q = %+v, want ok", name, c)
 		}
