@@ -261,6 +261,16 @@ jobs:
           make agent-install
           make agent-check
 
+      # VM images come from external sites; a cache and a retrying, mirrored
+      # download keep a slow site from failing the run.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pf-vm-images
+          key: vm-images-${{ hashFiles('scripts/ci/warm-vm-images.sh') }}
+
+      - name: Warm the VM image cache
+        run: scripts/ci/warm-vm-images.sh ~/.cache/pf-vm-images
+
       - name: One host, one VM (make verify-cloud)
         run: make verify-cloud
 

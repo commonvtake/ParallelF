@@ -310,8 +310,9 @@ func (in *PolicyInput) Validate(tunnel netip.Prefix) error {
 		v.add("action", "enum", "allow or deny.")
 	}
 	groups, err := ValidGroups(in.Groups)
-	if err != nil {
-		v.Errors = append(v.Errors, err.(*ValidationError).Errors...)
+	var groupErr *ValidationError
+	if errors.As(err, &groupErr) {
+		v.Errors = append(v.Errors, groupErr.Errors...)
 	} else if len(groups) == 0 {
 		v.add("groups", "required", "At least one group.")
 	}

@@ -45,6 +45,12 @@ AGENT_DATA_DIR = Path(os.environ.get("PF_AGENT_DATA_DIR", "/var/lib/parallelf/cl
 REQUIRE_NODE = os.environ.get("PF_REQUIRE_CLOUD_NODE") == "1"
 DISRUPTIVE = os.environ.get("PF_CLOUD_DISRUPTIVE_TESTS") == "1"
 
+# The same CirrOS image on GitHub (reachable from every CI runner), used to
+# provoke a real download with a wrong digest.
+CIRROS_MIRROR = (
+    "https://github.com/cirros-dev/cirros/releases/download/0.6.2/cirros-0.6.2-x86_64-disk.img"
+)
+
 # What the catalogue migration (0002) must provide.
 FLAVORS = {"pf.nano", "pf.micro", "pf.small", "pf.medium"}
 TEMPLATES = {"cirros", "ubuntu-24.04", "alpine-sleeper", "nginx"}
@@ -780,9 +786,9 @@ def test_failed_provisioning_is_reported_cleaned_up_and_retried(
     )
     admin_db.execute(
         "INSERT INTO cloud.images (id, name, kind, source, sha256, os)"
-        " SELECT %s, %s, kind, source, repeat('0', 64), os"
+        " SELECT %s, %s, kind, %s, repeat('0', 64), os"
         " FROM cloud.images WHERE name = 'cirros-0.6.2'",
-        (image_id, name),
+        (image_id, name, CIRROS_MIRROR),
     )
     admin_db.execute(
         "INSERT INTO cloud.templates"
