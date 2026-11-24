@@ -130,8 +130,8 @@ wg-agent-uninstall: ## Stop and remove the gateway agent, its interface and fire
 	sudo systemctl daemon-reload
 
 .PHONY: verify-vpn
-verify-vpn: ## One gateway, one device: enrol, connect, activate, deny, revoke (needs sudo)
-	@sudo -E python3 scripts/dev/verify_vpn.py
+verify-vpn: ## One gateway, one device: enrol, connect, activate, deny, revoke (uses sudo for the namespace)
+	@python3 scripts/dev/verify_vpn.py
 
 # --- Code generation ---------------------------------------------------------
 
