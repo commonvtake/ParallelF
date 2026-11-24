@@ -1,5 +1,7 @@
 # ParallelF VPN — WireGuard with a Custom Control Plane
 
+> **Implementation status (Phase 3).** Enrolment with device-side keys, the PENDING/ENROLLED/REVOKED/EXPIRED lifecycle, step-up activation with kernel-enforced expiry, default-deny policies, connection monitoring, sub-second revocation with conntrack flushing, audit and events are implemented for one gateway; the guide is [docs/vpn.md](../../vpn.md). Differences from this design are recorded in [ADR-0014](../../adr/0014-vpn-phase-3-long-poll-and-cli-firewall.md): HTTP long-poll instead of NATS, the `wg`/`nft` tools instead of `wgctrl`/`google/nftables`, groups from platform roles, and sign-in freshness with optional MFA. Internal DNS and routing into Cloud networks are not built yet.
+
 ## 1. Goals
 
 - Give owned devices private access to ParallelF services and Cloud networks over **WireGuard** (Noise IK handshake, Curve25519, ChaCha20-Poly1305, BLAKE2s). There is no custom crypto.

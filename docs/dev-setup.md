@@ -88,7 +88,8 @@ All services read `PF_*` environment variables. Each also accepts `NAME_FILE` po
 
 **pf-core:** `PF_HTTP_ADDR` (`:9001`), `PF_DATABASE_URL` (required, secret), `PF_SHUTDOWN_TIMEOUT` (`10s`).
 **pf-cloudd:** `PF_HTTP_ADDR` (`:9002`), `PF_AGENT_ADDR` (`:9102`), `PF_DATABASE_URL` (required, secret), `PF_CORE_URL`, `PF_CLOUD_JOIN_TOKEN` (required, secret), and the scheduling settings in the [Cloud guide](cloud.md#configuration), which also lists the node agent's settings.
-**pf-gateway:** `PF_HTTP_ADDR` (`:8000`), `PF_UPSTREAM_CORE_URL`, `PF_UPSTREAM_CLOUD_URL`, `PF_UPSTREAM_AI_URL` (required), `PF_SHUTDOWN_TIMEOUT`.
+**pf-vpnd:** `PF_HTTP_ADDR` (`:9003`), `PF_AGENT_ADDR` (`:9103`), `PF_DATABASE_URL`, `PF_VPN_JOIN_TOKEN`, `PF_VPN_PSK_KEY` (secrets), and the settings in the [VPN guide](vpn.md#configuration), which also lists the gateway agent's.
+**pf-gateway:** `PF_HTTP_ADDR` (`:8000`), `PF_UPSTREAM_CORE_URL`, `PF_UPSTREAM_CLOUD_URL`, `PF_UPSTREAM_VPN_URL`, `PF_UPSTREAM_AI_URL` (required), `PF_SHUTDOWN_TIMEOUT`.
 **pf-aid:** `PF_HTTP_HOST` (`0.0.0.0`), `PF_HTTP_PORT` (`9006`), `PF_VERSION`.
 
 **Dashboard**
@@ -199,8 +200,8 @@ Pages are server components that call the gateway with `gatewayGet`. Client comp
 
 **Adding a migration**
 
-1. Add `services/<service>/migrations/NNNN_description.up.sql` and `.down.sql` (`core` or `cloud`). Never edit an applied migration.
-2. Grant the runtime role (`pf_core`, `pf_cloud`) only the privileges it needs, inside the migration.
+1. Add `services/<service>/migrations/NNNN_description.up.sql` and `.down.sql` (`core`, `cloud` or `vpn`). Never edit an applied migration.
+2. Grant the runtime role (`pf_core`, `pf_cloud`, `pf_vpn`) only the privileges it needs, inside the migration.
 3. `make migrate` applies it to the running stack; CI applies all migrations to a fresh database.
 
 ## 7. Logging and tracing a request
@@ -240,5 +241,7 @@ CI (`.github/workflows/ci.yml`) runs all of them on every pull request: contract
 | No compute node appears in Cloud | `journalctl -u pf-node-agent` (or the `make agent` output). `make agent-check` lists the runtimes the host offers; a 401 means the join token in `/etc/parallelf/node-agent.env` differs from `PF_CLOUD_JOIN_TOKEN`. |
 | A workload stays `PENDING` | Its `status_message` says why, e.g. `0/1 nodes available: 1 insufficient memory`, or no node has KVM/Docker. |
 | A VM network fails to start | Its CIDR overlaps a route on the host (`ip route`); libvirt refuses it. Pick another range. |
+| No VPN gateway appears | `journalctl -u pf-wg-agent`; `make wg-agent-check` confirms `wg`, `ip` and `nft` work. Enrolment answers 409 `no-gateway` until one registers. |
+| Activating a device answers 403 `reauthentication-required` | Your sign-in is older than `PF_VPN_MAX_AUTH_AGE`; use "Sign in again" on the VPN page. |
 | A VM is `RUNNING` but does not answer | `sudo cat /var/lib/parallelf/cloud/instances/<id>/console.log` shows the guest's serial console. |
 | Signed out after restarting the dashboard | Expected: sessions are held in the dashboard's memory. |

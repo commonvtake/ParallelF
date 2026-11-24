@@ -12,13 +12,14 @@ func TestLoad(t *testing.T) {
 		"PF_UPSTREAM_CORE_URL":  "http://core:9001/",
 		"PF_UPSTREAM_AI_URL":    "http://ai:9006",
 		"PF_UPSTREAM_CLOUD_URL": "http://cloud:9002",
+		"PF_UPSTREAM_VPN_URL":   "http://vpn:9003",
 		"PF_OIDC_ISSUER":        "http://localhost:8080/realms/parallelf",
 		"PF_OIDC_JWKS_URL":      "http://keycloak:8080/realms/parallelf/protocol/openid-connect/certs",
 	}))
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if cfg.HTTPAddr != ":8000" || cfg.CoreURL.String() != "http://core:9001" || cfg.AIURL.Host != "ai:9006" || cfg.CloudURL.Host != "cloud:9002" {
+	if cfg.HTTPAddr != ":8000" || cfg.CoreURL.String() != "http://core:9001" || cfg.AIURL.Host != "ai:9006" || cfg.CloudURL.Host != "cloud:9002" || cfg.VPNURL.Host != "vpn:9003" {
 		t.Errorf("unexpected config: %+v", cfg)
 	}
 }

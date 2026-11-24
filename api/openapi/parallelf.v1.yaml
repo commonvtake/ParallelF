@@ -23,6 +23,8 @@ tags:
     description: Identity context and projects (pf-core)
   - name: cloud
     description: Nodes, networks, workloads, quotas and audit (pf-cloudd)
+  - name: vpn
+    description: WireGuard devices, activations, access policies and audit (pf-vpnd)
   - name: ai
     description: AI Investigator (pf-aid)
 security:
@@ -213,6 +215,402 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /api/v1/vpn/gateways:
+    get:
+      operationId: listVpnGateways
+      tags: [vpn]
+      summary: List VPN gateways
+      description: Requires `vpn.resources.read`.
+      responses:
+        "200":
+          description: Every gateway.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNGatewayList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/v1/vpn/gateways/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    delete:
+      operationId: deleteVpnGateway
+      tags: [vpn]
+      summary: Remove a gateway
+      description: Only a NOT_READY gateway. Requires `vpn.gateways.manage` and `confirm` equal to its name.
+      parameters:
+        - $ref: "#/components/parameters/Confirm"
+      responses:
+        "204":
+          description: The gateway was removed.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "428":
+          $ref: "#/components/responses/ConfirmationRequired"
+  /api/v1/vpn/devices:
+    get:
+      operationId: listVpnDevices
+      tags: [vpn]
+      summary: List devices
+      description: The caller's own devices; `scope=all` lists every user's (requires `vpn.devices.manage`).
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [mine, all]
+        - name: include
+          in: query
+          description: "`ended` also lists revoked and expired devices."
+          schema:
+            type: string
+            enum: [ended]
+      responses:
+        "200":
+          description: Devices, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNDeviceList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createVpnDevice
+      tags: [vpn]
+      summary: Enrol a device
+      description: Send only the device's public key; the private key never leaves the device. The response carries the client configuration and, when asked for, a pre-shared key that is shown only this once. Requires `vpn.devices.use`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VPNDeviceCreate"
+      responses:
+        "201":
+          description: The device and its client configuration.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNEnrolment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /api/v1/vpn/devices/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    get:
+      operationId: getVpnDevice
+      tags: [vpn]
+      summary: Get a device
+      description: The caller's own device, or any device for `vpn.devices.manage`.
+      responses:
+        "200":
+          description: The device.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNDevice"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: revokeVpnDevice
+      tags: [vpn]
+      summary: Revoke a device
+      description: Removes the peer from the gateway and ends its connections. Requires `confirm` equal to the device name.
+      parameters:
+        - $ref: "#/components/parameters/Confirm"
+      responses:
+        "200":
+          description: The revoked device.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNDevice"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "428":
+          $ref: "#/components/responses/ConfirmationRequired"
+  /api/v1/vpn/devices/{id}/config:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    get:
+      operationId: getVpnDeviceConfig
+      tags: [vpn]
+      summary: Get a device's client configuration
+      description: Everything except the private key and the pre-shared key.
+      responses:
+        "200":
+          description: The configuration.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNClientConfig"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/vpn/devices/{id}/metrics:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    get:
+      operationId: getVpnDeviceMetrics
+      tags: [vpn]
+      summary: Get a device's traffic
+      parameters:
+        - $ref: "#/components/parameters/MetricWindow"
+      responses:
+        "200":
+          description: Bytes received and sent per sample.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNMetrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /api/v1/vpn/devices/{id}/activate:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    post:
+      operationId: activateVpnDevice
+      tags: [vpn]
+      summary: Activate a device
+      description: Allows the device to send traffic until the activation expires; the gateway enforces the expiry in the kernel. Only the owner may activate, and only within `PF_VPN_MAX_AUTH_AGE` of signing in (403 `reauthentication-required` otherwise).
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VPNActivation"
+      responses:
+        "200":
+          description: The active device.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNDevice"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /api/v1/vpn/devices/{id}/deactivate:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    post:
+      operationId: deactivateVpnDevice
+      tags: [vpn]
+      summary: Deactivate a device
+      responses:
+        "200":
+          description: The device.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNDevice"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/vpn/devices/{id}/groups:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    put:
+      operationId: setVpnDeviceGroups
+      tags: [vpn]
+      summary: Set a device's groups
+      description: Requires `vpn.devices.manage`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VPNGroups"
+      responses:
+        "200":
+          description: The device.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNDevice"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /api/v1/vpn/policies:
+    get:
+      operationId: listVpnPolicies
+      tags: [vpn]
+      summary: List access policies
+      description: In evaluation order.
+      responses:
+        "200":
+          description: Policies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNPolicyList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: createVpnPolicy
+      tags: [vpn]
+      summary: Create an access policy
+      description: Requires `vpn.policies.manage`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VPNPolicyCreate"
+      responses:
+        "201":
+          description: The policy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VPNPolicy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /api/v1/vpn/policies/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceID"
+    delete:
+      operationId: deleteVpnPolicy
+      tags: [vpn]
+      summary: Delete an access policy
+      description: Requires `vpn.policies.manage` and `confirm` equal to its name.
+      parameters:
+        - $ref: "#/components/parameters/Confirm"
+      responses:
+        "204":
+          description: Deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "428":
+          $ref: "#/components/responses/ConfirmationRequired"
+  /api/v1/vpn/audit:
+    get:
+      operationId: listVpnAudit
+      tags: [vpn]
+      summary: List the VPN audit trail
+      description: Newest first. Requires `vpn.audit.read`.
+      parameters:
+        - name: resource_type
+          in: query
+          schema:
+            type: string
+        - name: resource_id
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - name: before
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: A page of entries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /api/v1/vpn/audit/verify:
+    get:
+      operationId: verifyVpnAudit
+      tags: [vpn]
+      summary: Verify the VPN audit chain
+      description: Requires `vpn.audit.read`.
+      responses:
+        "200":
+          description: The verification result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditVerification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /api/v1/ai/info:
     get:
@@ -1736,3 +2134,298 @@ components:
         checked_at:
           type: string
           format: date-time
+
+    VPNGateway:
+      type: object
+      additionalProperties: false
+      required: [id, name, status, public_key, endpoint, listen_port, address, agent_version, applied_revision, revision, registered_at, last_seen_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [READY, NOT_READY]
+        public_key:
+          type: string
+          description: The gateway's WireGuard public key (base64).
+        endpoint:
+          type: string
+          description: host:port devices dial.
+        listen_port:
+          type: integer
+        address:
+          type: string
+          description: The gateway's tunnel address with prefix, e.g. 10.255.0.1/22.
+        agent_version:
+          type: string
+        applied_revision:
+          type: integer
+          description: The desired-state revision the gateway last applied.
+        revision:
+          type: integer
+          description: The current desired-state revision.
+        apply_error:
+          type: string
+        registered_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+
+    VPNGatewayList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/VPNGateway"
+
+    VPNDevice:
+      type: object
+      additionalProperties: false
+      required: [id, name, owner_subject, owner_name, public_key, address, groups, preshared_key, state, active, connection, rx_bytes, tx_bytes, expires_at, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        owner_subject:
+          type: string
+        owner_name:
+          type: string
+        public_key:
+          type: string
+        address:
+          type: string
+          description: Tunnel IPv4 address.
+        groups:
+          type: array
+          items:
+            type: string
+        preshared_key:
+          type: boolean
+          description: Whether the peer uses a pre-shared key (the key itself is never returned again).
+        state:
+          type: string
+          enum: [PENDING, ENROLLED, REVOKED, EXPIRED]
+        active:
+          type: boolean
+          description: Whether the device may send traffic now.
+        active_until:
+          type: string
+          format: date-time
+        connection:
+          type: string
+          enum: [online, idle, offline]
+        last_handshake_at:
+          type: string
+          format: date-time
+        endpoint:
+          type: string
+        rx_bytes:
+          type: integer
+        tx_bytes:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+
+    VPNDeviceList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/VPNDevice"
+
+    VPNDeviceCreate:
+      type: object
+      additionalProperties: false
+      required: [name, public_key]
+      properties:
+        name:
+          $ref: "#/components/schemas/ResourceName"
+        public_key:
+          type: string
+          description: Base64 WireGuard (X25519) public key.
+        preshared_key:
+          type: boolean
+          default: false
+
+    VPNClientConfig:
+      type: object
+      additionalProperties: false
+      required: [address, gateway_public_key, endpoint, allowed_ips, persistent_keepalive]
+      properties:
+        address:
+          type: string
+        gateway_public_key:
+          type: string
+        endpoint:
+          type: string
+        allowed_ips:
+          type: array
+          items:
+            type: string
+        persistent_keepalive:
+          type: integer
+        preshared_key:
+          type: string
+          description: Only in the enrolment response, and only when requested.
+
+    VPNEnrolment:
+      type: object
+      additionalProperties: false
+      required: [device, config]
+      properties:
+        device:
+          $ref: "#/components/schemas/VPNDevice"
+        config:
+          $ref: "#/components/schemas/VPNClientConfig"
+
+    VPNActivation:
+      type: object
+      additionalProperties: false
+      properties:
+        ttl_seconds:
+          type: integer
+          description: Length of the activation; the server's default when absent.
+
+    VPNGroups:
+      type: object
+      additionalProperties: false
+      required: [groups]
+      properties:
+        groups:
+          type: array
+          maxItems: 16
+          items:
+            type: string
+
+    VPNPolicy:
+      type: object
+      additionalProperties: false
+      required: [id, name, priority, action, groups, destinations, protocol, ports, description, created_by, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        priority:
+          type: integer
+        action:
+          type: string
+          enum: [allow, deny]
+        groups:
+          type: array
+          items:
+            type: string
+        destinations:
+          type: array
+          items:
+            type: string
+          description: '"platform" (the gateway''s tunnel address) or IPv4 CIDRs.'
+        protocol:
+          type: string
+          enum: [tcp, udp, icmp, any]
+        ports:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    VPNPolicyList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/VPNPolicy"
+
+    VPNPolicyCreate:
+      type: object
+      additionalProperties: false
+      required: [name, priority, action, groups, destinations, protocol]
+      properties:
+        name:
+          $ref: "#/components/schemas/ResourceName"
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        action:
+          type: string
+          enum: [allow, deny]
+        groups:
+          type: array
+          minItems: 1
+          maxItems: 16
+          items:
+            type: string
+        destinations:
+          type: array
+          minItems: 1
+          maxItems: 32
+          items:
+            type: string
+        protocol:
+          type: string
+          enum: [tcp, udp, icmp, any]
+        ports:
+          type: array
+          maxItems: 32
+          items:
+            type: string
+        description:
+          type: string
+          maxLength: 500
+
+    VPNTrafficPoint:
+      type: object
+      additionalProperties: false
+      required: [at, rx_bytes, tx_bytes]
+      properties:
+        at:
+          type: string
+          format: date-time
+        rx_bytes:
+          type: integer
+        tx_bytes:
+          type: integer
+
+    VPNMetrics:
+      type: object
+      additionalProperties: false
+      required: [window, points]
+      properties:
+        window:
+          type: string
+          enum: ["15m", "1h", "6h", "24h"]
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/VPNTrafficPoint"

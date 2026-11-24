@@ -63,6 +63,7 @@ migrate: ## Apply pending migrations to the running database
 	$(COMPOSE) run --rm db-init
 	$(COMPOSE) run --rm migrate-core
 	$(COMPOSE) run --rm migrate-cloud
+	$(COMPOSE) run --rm migrate-vpn
 
 # --- Compute host (ParallelF Cloud) -----------------------------------------
 
@@ -94,6 +95,43 @@ agent-uninstall: ## Stop and remove the agent service (workloads keep running)
 	-sudo systemctl disable --now pf-node-agent
 	sudo rm -f /etc/systemd/system/pf-node-agent.service /usr/local/bin/pf-node-agent
 	sudo systemctl daemon-reload
+
+# --- VPN gateway (ParallelF VPN) ----------------------------------------------
+
+WG_AGENT_BIN := bin/pf-wg-agent
+
+.PHONY: vpn-gateway-setup
+vpn-gateway-setup: ## Install WireGuard tools, nftables and conntrack on this host (sudo)
+	sudo scripts/dev/vpn-gateway-setup.sh
+
+.PHONY: wg-agent-build
+wg-agent-build: ## Build the WireGuard gateway agent into bin/
+	CGO_ENABLED=0 go build -trimpath -o $(WG_AGENT_BIN) ./services/vpn-agent/cmd/pf-wg-agent
+
+.PHONY: wg-agent-check
+wg-agent-check: wg-agent-build ## Check that wg, ip and nft work for the gateway agent
+	sudo env PF_WGA_VPN_URL=http://localhost:9103 $(WG_AGENT_BIN) -check
+
+.PHONY: wg-agent
+wg-agent: wg-agent-build ## Run the gateway agent in the foreground (Ctrl-C stops it; tunnels stay up)
+	sudo env PF_WGA_VPN_URL=http://localhost:9103 PF_WGA_JOIN_TOKEN=$(PF_VPN_JOIN_TOKEN) \
+		PF_LOG_LEVEL=$(PF_LOG_LEVEL) $(WG_AGENT_BIN)
+
+.PHONY: wg-agent-install
+wg-agent-install: wg-agent-build ## Install and start the gateway agent as a systemd service
+	sudo env PF_VPN_JOIN_TOKEN=$(PF_VPN_JOIN_TOKEN) scripts/dev/wg-agent-install.sh $(WG_AGENT_BIN)
+
+.PHONY: wg-agent-uninstall
+wg-agent-uninstall: ## Stop and remove the gateway agent, its interface and firewall table
+	-sudo systemctl disable --now pf-wg-agent
+	-sudo ip link delete wg-pf0
+	-sudo nft delete table inet parallelf_vpn
+	sudo rm -f /etc/systemd/system/pf-wg-agent.service /usr/local/bin/pf-wg-agent
+	sudo systemctl daemon-reload
+
+.PHONY: verify-vpn
+verify-vpn: ## One gateway, one device: enrol, connect, activate, deny, revoke (uses sudo for the namespace)
+	@python3 scripts/dev/verify_vpn.py
 
 # --- Code generation ---------------------------------------------------------
 
@@ -145,6 +183,7 @@ test-go: ## Go unit tests (store tests need PF_TEST_DATABASE_URL, else they skip
 test-go-db: ## Go tests including the PostgreSQL store tests, against the running stack
 	PF_TEST_DATABASE_URL="postgres://pf_core:$(PF_CORE_DB_PASSWORD)@localhost:$(PF_POSTGRES_HOST_PORT)/parallelf?sslmode=disable" \
 	PF_TEST_CLOUD_DATABASE_URL="postgres://pf_cloud:$(PF_CLOUD_DB_PASSWORD)@localhost:$(PF_POSTGRES_HOST_PORT)/parallelf?sslmode=disable" \
+	PF_TEST_VPN_DATABASE_URL="postgres://pf_vpn:$(PF_VPN_DB_PASSWORD)@localhost:$(PF_POSTGRES_HOST_PORT)/parallelf?sslmode=disable" \
 	PF_TEST_ADMIN_DATABASE_URL="postgres://postgres:$(POSTGRES_PASSWORD)@localhost:$(PF_POSTGRES_HOST_PORT)/parallelf?sslmode=disable" \
 		go test -race -count=1 ./...
 

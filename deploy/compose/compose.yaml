@@ -8,6 +8,7 @@
 #   keycloak   http://localhost:8080   OpenID Connect provider
 #   postgres   localhost:5432          database (PF_POSTGRES_HOST_PORT)
 #   cloud      localhost:9102          node-agent endpoint of pf-cloudd
+#   vpn        localhost:9103          gateway-agent endpoint of pf-vpnd
 
 name: parallelf
 
@@ -62,6 +63,8 @@ services:
       PF_CORE_DB_PASSWORD: ${PF_CORE_DB_PASSWORD:?}
       PF_CLOUD_OWNER_DB_PASSWORD: ${PF_CLOUD_OWNER_DB_PASSWORD:?run "make init" to add the new settings to .env}
       PF_CLOUD_DB_PASSWORD: ${PF_CLOUD_DB_PASSWORD:?}
+      PF_VPN_OWNER_DB_PASSWORD: ${PF_VPN_OWNER_DB_PASSWORD:?run "make init" to add the new settings to .env}
+      PF_VPN_DB_PASSWORD: ${PF_VPN_DB_PASSWORD:?}
     volumes:
       - ../postgres/init:/init:ro
     logging: *logging
@@ -97,6 +100,23 @@ services:
       - /migrations
       - -database
       - postgres://pf_cloud_owner:${PF_CLOUD_OWNER_DB_PASSWORD:?}@postgres:5432/parallelf?sslmode=disable&search_path=cloud
+      - up
+    logging: *logging
+
+  # Applies pf-vpnd's schema migrations.
+  migrate-vpn:
+    image: migrate/migrate:v4.18.3
+    restart: "no"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    volumes:
+      - ../../services/vpn/migrations:/migrations:ro
+    command:
+      - -path
+      - /migrations
+      - -database
+      - postgres://pf_vpn_owner:${PF_VPN_OWNER_DB_PASSWORD:?}@postgres:5432/parallelf?sslmode=disable&search_path=vpn
       - up
     logging: *logging
 
@@ -204,6 +224,44 @@ services:
     security_opt: ["no-new-privileges:true"]
     logging: *logging
 
+  # ParallelF VPN control plane. Port 9003 serves the user API (through the
+  # gateway); port 9103 serves the WireGuard gateway agent on the host.
+  vpn:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/go-service.Dockerfile
+      args:
+        SERVICE: vpn
+        BINARY: pf-vpnd
+        VERSION: ${PF_VERSION:-dev}
+    restart: unless-stopped
+    depends_on:
+      migrate-vpn:
+        condition: service_completed_successfully
+    environment:
+      <<: *oidc-env
+      PF_HTTP_ADDR: ":9003"
+      PF_AGENT_ADDR: ":9103"
+      PF_LOG_LEVEL: ${PF_LOG_LEVEL:-info}
+      PF_DATABASE_URL: postgres://pf_vpn:${PF_VPN_DB_PASSWORD:?}@postgres:5432/parallelf?sslmode=disable
+      PF_VPN_JOIN_TOKEN: ${PF_VPN_JOIN_TOKEN:?run "make init" to add the new settings to .env}
+      PF_VPN_PSK_KEY: ${PF_VPN_PSK_KEY:-}
+      PF_VPN_MAX_AUTH_AGE: ${PF_VPN_MAX_AUTH_AGE:-15m}
+      # The development realm's password-grant CLI client issues tokens
+      # without auth_time; it exists only in the local realm.
+      PF_VPN_STEP_UP_EXEMPT_CLIENTS: parallelf-dev-cli
+    ports:
+      - "127.0.0.1:9103:9103"
+    healthcheck:
+      test: ["CMD", "/service", "-healthcheck", "http://127.0.0.1:9003/readyz"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
   ai:
     build:
       context: ../..
@@ -242,6 +300,8 @@ services:
         condition: service_healthy
       cloud:
         condition: service_healthy
+      vpn:
+        condition: service_healthy
       ai:
         condition: service_healthy
     environment:
@@ -250,6 +310,7 @@ services:
       PF_LOG_LEVEL: ${PF_LOG_LEVEL:-info}
       PF_UPSTREAM_CORE_URL: http://core:9001
       PF_UPSTREAM_CLOUD_URL: http://cloud:9002
+      PF_UPSTREAM_VPN_URL: http://vpn:9003
       PF_UPSTREAM_AI_URL: http://ai:9006
     ports:
       - "127.0.0.1:8000:8000"

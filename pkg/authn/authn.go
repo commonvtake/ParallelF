@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/commonvtake/parallelf/pkg/httpx"
 	"github.com/commonvtake/parallelf/pkg/logging"
@@ -27,6 +28,14 @@ type Principal struct {
 	Email    string   `json:"email,omitempty"`
 	Name     string   `json:"name,omitempty"`
 	Roles    []string `json:"roles"`
+	// AuthTime is when the user last authenticated interactively (the
+	// auth_time claim); zero when the token does not say. AMR lists the
+	// authentication methods used (the amr claim). Services that require a
+	// recent or multi-factor sign-in, such as VPN activation, check these.
+	AuthTime time.Time `json:"-"`
+	AMR      []string  `json:"-"`
+	// ClientID is the OAuth client the token was issued to (azp).
+	ClientID string `json:"-"`
 }
 
 // Verifier validates a raw bearer token and returns its Principal.

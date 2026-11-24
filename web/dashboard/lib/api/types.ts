@@ -36,3 +36,16 @@ export type QuotaStatus = Schemas["QuotaStatus"];
 export type AuditEntry = Schemas["AuditEntry"];
 export type AuditPage = Schemas["AuditPage"];
 export type AuditVerification = Schemas["AuditVerification"];
+
+// VPN
+export type VPNGateway = Schemas["VPNGateway"];
+export type VPNGatewayList = Schemas["VPNGatewayList"];
+export type VPNDevice = Schemas["VPNDevice"];
+export type VPNDeviceList = Schemas["VPNDeviceList"];
+export type VPNDeviceCreate = Schemas["VPNDeviceCreate"];
+export type VPNClientConfig = Schemas["VPNClientConfig"];
+export type VPNEnrolment = Schemas["VPNEnrolment"];
+export type VPNPolicy = Schemas["VPNPolicy"];
+export type VPNPolicyList = Schemas["VPNPolicyList"];
+export type VPNPolicyCreate = Schemas["VPNPolicyCreate"];
+export type VPNMetrics = Schemas["VPNMetrics"];

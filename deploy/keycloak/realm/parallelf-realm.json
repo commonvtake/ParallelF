@@ -14,12 +14,30 @@
   "ssoSessionMaxLifespan": 36000,
   "roles": {
     "realm": [
-      { "name": "owner", "description": "Full control of the platform" },
-      { "name": "admin", "description": "Manages resources and members" },
-      { "name": "operator", "description": "Operates Cloud and VPN resources" },
-      { "name": "analyst", "description": "Reads telemetry and manages incidents" },
-      { "name": "lab-researcher", "description": "Runs Security Lab environments" },
-      { "name": "viewer", "description": "Read-only access" }
+      {
+        "name": "owner",
+        "description": "Full control of the platform"
+      },
+      {
+        "name": "admin",
+        "description": "Manages resources and members"
+      },
+      {
+        "name": "operator",
+        "description": "Operates Cloud and VPN resources"
+      },
+      {
+        "name": "analyst",
+        "description": "Reads telemetry and manages incidents"
+      },
+      {
+        "name": "lab-researcher",
+        "description": "Runs Security Lab environments"
+      },
+      {
+        "name": "viewer",
+        "description": "Read-only access"
+      }
     ]
   },
   "clients": [
@@ -38,7 +56,9 @@
       "serviceAccountsEnabled": false,
       "rootUrl": "http://localhost:3000",
       "baseUrl": "/",
-      "redirectUris": ["http://localhost:3000/auth/callback"],
+      "redirectUris": [
+        "http://localhost:3000/auth/callback"
+      ],
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
@@ -55,6 +75,21 @@
             "access.token.claim": "true",
             "id.token.claim": "false",
             "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "auth-time",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "AUTH_TIME",
+            "claim.name": "auth_time",
+            "jsonType.label": "long",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "false"
           }
         }
       ]
@@ -82,6 +117,21 @@
             "id.token.claim": "false",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "auth-time",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "AUTH_TIME",
+            "claim.name": "auth_time",
+            "jsonType.label": "long",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
         }
       ]
     }
@@ -94,8 +144,16 @@
       "email": "owner@parallelf.test",
       "firstName": "Dev",
       "lastName": "Owner",
-      "credentials": [{ "type": "password", "value": "${PF_DEV_OWNER_PASSWORD}", "temporary": false }],
-      "realmRoles": ["owner"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${PF_DEV_OWNER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "owner"
+      ]
     },
     {
       "username": "viewer",
@@ -104,8 +162,16 @@
       "email": "viewer@parallelf.test",
       "firstName": "Dev",
       "lastName": "Viewer",
-      "credentials": [{ "type": "password", "value": "${PF_DEV_VIEWER_PASSWORD}", "temporary": false }],
-      "realmRoles": ["viewer"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${PF_DEV_VIEWER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "viewer"
+      ]
     }
   ]
 }

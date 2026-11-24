@@ -28,6 +28,7 @@ const maxBodyBytes = 1 << 20
 //	GET /api/v1/system/status    aggregated platform health (authenticated)
 //	/api/v1/core/...             pf-core   (authenticated)
 //	/api/v1/cloud/...            pf-cloudd (authenticated)
+//	/api/v1/vpn/...              pf-vpnd   (authenticated)
 //	/api/v1/ai/...               pf-aid    (authenticated)
 //
 // Every /api/ route requires a valid access token. Upstreams receive the
@@ -41,6 +42,7 @@ func NewHandler(cfg config.Config, verifier authn.Verifier, transport http.Round
 	checker := status.NewChecker(ServiceName, version.Version, []status.Target{
 		{Name: "core", Kind: "service", URL: cfg.CoreURL.String() + "/readyz", ExposeChecks: true},
 		{Name: "cloud", Kind: "service", URL: cfg.CloudURL.String() + "/readyz", ExposeChecks: true},
+		{Name: "vpn", Kind: "service", URL: cfg.VPNURL.String() + "/readyz", ExposeChecks: true},
 		{Name: "ai", Kind: "service", URL: cfg.AIURL.String() + "/readyz", ExposeChecks: true},
 		{Name: "identity-provider", Kind: "identity-provider", URL: cfg.OIDC.JWKSURL},
 	}, transport)
@@ -49,6 +51,7 @@ func NewHandler(cfg config.Config, verifier authn.Verifier, transport http.Round
 
 	mux.Handle("/api/v1/core/", httpx.Chain(proxy.New("core", cfg.CoreURL, transport, logger), authenticate))
 	mux.Handle("/api/v1/cloud/", httpx.Chain(proxy.New("cloud", cfg.CloudURL, transport, logger), authenticate))
+	mux.Handle("/api/v1/vpn/", httpx.Chain(proxy.New("vpn", cfg.VPNURL, transport, logger), authenticate))
 	mux.Handle("/api/v1/ai/", httpx.Chain(proxy.New("ai", cfg.AIURL, transport, logger), authenticate))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -13,9 +13,15 @@ random_secret() {
   head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n'
 }
 
+random_key32() {
+  # 32 random bytes, base64 (an AES-256 key).
+  head -c 32 /dev/urandom | base64 | tr -d '\n'
+}
+
 render() { # line -> line with a generated secret if needed
   case "$1" in
     *=generate-me) printf '%s=%s\n' "${1%%=*}" "$(random_secret)" ;;
+    *=generate-key32) printf '%s=%s\n' "${1%%=*}" "$(random_key32)" ;;
     *) printf '%s\n' "$1" ;;
   esac
 }

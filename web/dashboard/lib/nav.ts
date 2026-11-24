@@ -26,7 +26,7 @@ export const SECTIONS: readonly Section[] = [
   {
     href: "/vpn",
     label: "VPN",
-    status: "not-implemented",
+    status: "available",
     summary: "WireGuard devices, access policies and connection monitoring.",
   },
   {

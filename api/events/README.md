@@ -34,8 +34,16 @@ message encoded as protojson (`content-type: application/json`).
 | `parallelf.cloud.v1.WorkloadCreated` | `pf.cloud.evt.workload.created` | pf-cloudd | Written to the outbox |
 | `parallelf.cloud.v1.WorkloadStateChanged` | `pf.cloud.evt.workload.state_changed` | pf-cloudd | Written to the outbox |
 | `parallelf.cloud.v1.WorkloadDeleted` | `pf.cloud.evt.workload.deleted` | pf-cloudd | Written to the outbox |
+| `parallelf.vpn.v1.GatewayRegistered` | `pf.vpn.evt.gateway.registered` | pf-vpnd | Written to the outbox |
+| `parallelf.vpn.v1.GatewayStatusChanged` | `pf.vpn.evt.gateway.status_changed` | pf-vpnd | Written to the outbox |
+| `parallelf.vpn.v1.DeviceCreated` | `pf.vpn.evt.device.created` | pf-vpnd | Written to the outbox |
+| `parallelf.vpn.v1.DeviceStateChanged` | `pf.vpn.evt.device.state_changed` | pf-vpnd | Written to the outbox |
+| `parallelf.vpn.v1.DeviceActivated` | `pf.vpn.evt.device.activated` | pf-vpnd | Written to the outbox |
+| `parallelf.vpn.v1.DeviceDeactivated` | `pf.vpn.evt.device.deactivated` | pf-vpnd | Written to the outbox |
+| `parallelf.vpn.v1.PeerConnectionChanged` | `pf.vpn.evt.peer.connection_changed` | pf-vpnd | Written to the outbox |
+| `parallelf.vpn.v1.PolicyChanged` | `pf.vpn.evt.policy.changed` | pf-vpnd | Written to the outbox |
 
-Cloud subjects are `node/<id>`, `network/<id>` and `workload/<id>`. Workload states and network kinds are carried as strings (the values in the OpenAPI contract), so adding a state is not a breaking change.
+Cloud subjects are `node/<id>`, `network/<id>` and `workload/<id>`; VPN subjects are `gateway/<id>`, `device/<id>` and `policy/<id>`. `DeviceCreated` carries the tunnel address and owner, which NetGuard uses to attribute tunnel traffic to a user and device. Workload states and network kinds are carried as strings (the values in the OpenAPI contract), so adding a state is not a breaking change.
 
 ## Delivery
 

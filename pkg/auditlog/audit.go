@@ -1,10 +1,10 @@
-// Package audit computes the hash chain of the cloud audit trail.
+// Package auditlog computes the hash chain of ParallelF audit trails.
 //
 // Each entry's hash covers the previous entry's hash and a canonical
 // encoding of the entry itself, so changing, removing or reordering any
 // stored entry breaks every hash after it. The database additionally
 // refuses UPDATE, DELETE and TRUNCATE on the table.
-package audit
+package auditlog
 
 import (
 	"crypto/sha256"
