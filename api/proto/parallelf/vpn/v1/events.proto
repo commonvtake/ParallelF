@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+// Domain events published by pf-vpnd.
+//
+// Wire format: the message is encoded as protojson and carried with
+// CloudEvents 1.0 attributes (see api/events/README.md). Changes must stay
+// backward compatible within v1; `buf breaking` enforces this in CI.
+package parallelf.vpn.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// A gateway registered (or re-registered) with pf-vpnd.
+message GatewayRegistered {
+  string gateway_id = 1;
+  string name = 2;
+  string public_key = 3;
+  string endpoint = 4;
+  google.protobuf.Timestamp registered_at = 5;
+}
+
+// A gateway stopped or resumed reporting.
+message GatewayStatusChanged {
+  string gateway_id = 1;
+  string name = 2;
+  // READY or NOT_READY.
+  string previous_status = 3;
+  string status = 4;
+  google.protobuf.Timestamp changed_at = 5;
+}
+
+// A device was enrolled: its tunnel address now belongs to its owner.
+// NetGuard uses this to attribute tunnel traffic to a user and device.
+message DeviceCreated {
+  string device_id = 1;
+  string name = 2;
+  string owner_subject = 3;
+  string owner_name = 4;
+  string address = 5;
+  string public_key = 6;
+  repeated string groups = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp expires_at = 9;
+}
+
+// A device changed lifecycle state: PENDING, ENROLLED, REVOKED or EXPIRED.
+message DeviceStateChanged {
+  string device_id = 1;
+  string owner_subject = 2;
+  string address = 3;
+  string previous_state = 4;
+  string state = 5;
+  string actor = 6;
+  google.protobuf.Timestamp changed_at = 7;
+}
+
+// A device was allowed to send traffic until `until`.
+message DeviceActivated {
+  string device_id = 1;
+  string owner_subject = 2;
+  string address = 3;
+  string actor = 4;
+  google.protobuf.Timestamp until = 5;
+  google.protobuf.Timestamp activated_at = 6;
+}
+
+// A device's activation ended before its expiry.
+message DeviceDeactivated {
+  string device_id = 1;
+  string owner_subject = 2;
+  string address = 3;
+  string actor = 4;
+  google.protobuf.Timestamp deactivated_at = 5;
+}
+
+// A peer's derived connection status changed (a handshake within 180 s
+// means connected).
+message PeerConnectionChanged {
+  string device_id = 1;
+  string owner_subject = 2;
+  string address = 3;
+  bool connected = 4;
+  // The peer's public endpoint (IP:port) as the gateway saw it.
+  string endpoint = 5;
+  google.protobuf.Timestamp changed_at = 6;
+}
+
+// An access policy was created or deleted.
+message PolicyChanged {
+  string policy_id = 1;
+  string name = 2;
+  // created or deleted.
+  string change = 3;
+  string actor = 4;
+  google.protobuf.Timestamp changed_at = 5;
+}
