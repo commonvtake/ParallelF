@@ -80,7 +80,7 @@ func run() error {
 	ctrl := controller.New(db, controller.Options{GatewayTimeout: cfg.GatewayTimeout, StatsRetention: cfg.StatsRetention}, logger)
 	userAPI := api.New(db, api.Activation{
 		Default: cfg.ActivationTTL, Min: cfg.ActivationMin, Max: cfg.ActivationMax,
-		MaxAuthAge: cfg.MaxAuthAge, RequireMFA: cfg.RequireMFA,
+		MaxAuthAge: cfg.MaxAuthAge, RequireMFA: cfg.RequireMFA, ExemptClients: cfg.ExemptClients,
 	}, cfg.Tunnel, logger)
 	deps := app.Dependencies{
 		Logger:      logger,
@@ -91,7 +91,7 @@ func run() error {
 	}
 	logger.Info("starting", slog.String("commit", version.Commit), slog.String("api_addr", cfg.HTTPAddr),
 		slog.String("agent_addr", cfg.AgentAddr), slog.String("tunnel", cfg.Tunnel.String()),
-		slog.Bool("preshared_keys", psk != nil), slog.Duration("max_auth_age", cfg.MaxAuthAge), slog.Bool("require_mfa", cfg.RequireMFA))
+		slog.Bool("preshared_keys", psk != nil), slog.Duration("max_auth_age", cfg.MaxAuthAge), slog.Bool("require_mfa", cfg.RequireMFA), slog.Any("step_up_exempt_clients", cfg.ExemptClients))
 
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)

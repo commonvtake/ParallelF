@@ -3,6 +3,7 @@ package config
 
 import (
 	"net/netip"
+	"strings"
 	"time"
 
 	"github.com/commonvtake/parallelf/pkg/authn"
@@ -27,6 +28,7 @@ type Config struct {
 	ActivationMax   time.Duration
 	MaxAuthAge      time.Duration
 	RequireMFA      bool
+	ExemptClients   []string
 	ShutdownTimeout time.Duration
 }
 
@@ -48,6 +50,7 @@ func Load(l *config.Loader) (Config, error) {
 		ActivationMax:   l.Duration("PF_VPN_ACTIVATION_MAX", 12*time.Hour),
 		MaxAuthAge:      l.Duration("PF_VPN_MAX_AUTH_AGE", 15*time.Minute),
 		RequireMFA:      l.Bool("PF_VPN_REQUIRE_MFA", false),
+		ExemptClients:   splitList(l.String("PF_VPN_STEP_UP_EXEMPT_CLIENTS", "")),
 		ShutdownTimeout: l.Duration("PF_SHUTDOWN_TIMEOUT", 10*time.Second),
 	}
 	tunnel, err := netip.ParsePrefix(l.String("PF_VPN_TUNNEL_CIDR", "10.255.0.0/22"))
@@ -70,4 +73,14 @@ func Load(l *config.Loader) (Config, error) {
 		l.Invalid("PF_VPN_DEVICE_TTL", "must be at least 1h")
 	}
 	return cfg, l.Err()
+}
+
+func splitList(s string) []string {
+	var out []string
+	for _, item := range strings.Split(s, ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			out = append(out, item)
+		}
+	}
+	return out
 }

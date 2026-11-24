@@ -33,12 +33,15 @@ type verifier struct{}
 func (verifier) Verify(_ context.Context, token string) (*authn.Principal, error) {
 	role, stale := strings.CutSuffix(token, "-stale")
 	switch role {
+	case "cli":
+		// A development CLI token: no auth_time at all.
+		return &authn.Principal{Subject: "sub-operator", Username: "operator", Roles: []string{"operator"}, ClientID: "dev-cli"}, nil
 	case "owner", "viewer", "operator", "admin":
 		at := now.Add(-time.Minute)
 		if stale {
 			at = now.Add(-time.Hour)
 		}
-		return &authn.Principal{Subject: "sub-" + role, Username: role, Roles: []string{role}, AuthTime: at}, nil
+		return &authn.Principal{Subject: "sub-" + role, Username: role, Roles: []string{role}, AuthTime: at, ClientID: "parallelf-dashboard"}, nil
 	}
 	return nil, authn.ErrInvalidToken
 }
@@ -88,10 +91,13 @@ func (f *fakeStore) CreatePolicy(_ context.Context, in domain.PolicyInput, _ dom
 	return domain.Policy{ID: policyID, Name: in.Name}, nil
 }
 
+var exempt []string
+
 func newServer(t *testing.T, f *fakeStore) http.Handler {
 	t.Helper()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	a := New(f, Activation{Default: 8 * time.Hour, Min: 30 * time.Second, Max: 12 * time.Hour, MaxAuthAge: 15 * time.Minute},
+	a := New(f, Activation{Default: 8 * time.Hour, Min: 30 * time.Second, Max: 12 * time.Hour, MaxAuthAge: 15 * time.Minute,
+		ExemptClients: exempt},
 		netip.MustParsePrefix("10.255.0.0/22"), logger)
 	a.now = func() time.Time { return now }
 	mux := http.NewServeMux()
@@ -193,6 +199,18 @@ func TestActivationNeedsTheOwnerAndARecentSignIn(t *testing.T) {
 	}
 	if rec, _ := call(t, h, "POST", "/api/v1/vpn/devices/"+deviceID+"/activate", "operator", ""); rec.Code != http.StatusOK || !f.activatedTo.Equal(now.Add(8*time.Hour)) {
 		t.Fatalf("default length: %d %v", rec.Code, f.activatedTo)
+	}
+}
+
+func TestStepUpExemptionIsPerClient(t *testing.T) {
+	f := &fakeStore{device: ownersDevice()}
+	if rec, _ := call(t, newServer(t, f), "POST", "/api/v1/vpn/devices/"+deviceID+"/activate", "cli", ""); rec.Code != http.StatusForbidden {
+		t.Fatalf("a token without auth_time must be refused: %d", rec.Code)
+	}
+	exempt = []string{"dev-cli"}
+	defer func() { exempt = nil }()
+	if rec, _ := call(t, newServer(t, f), "POST", "/api/v1/vpn/devices/"+deviceID+"/activate", "cli", ""); rec.Code != http.StatusOK {
+		t.Fatalf("an exempt development client: %d", rec.Code)
 	}
 }
 

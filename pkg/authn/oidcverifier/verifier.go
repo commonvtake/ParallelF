@@ -45,6 +45,7 @@ type tokenClaims struct {
 	} `json:"realm_access"`
 	AuthTime int64    `json:"auth_time"`
 	AMR      []string `json:"amr"`
+	AZP      string   `json:"azp"`
 }
 
 // Verify validates rawToken and maps its claims to a Principal.
@@ -83,6 +84,7 @@ func (v *Verifier) Verify(ctx context.Context, rawToken string) (*authn.Principa
 		Roles:    roles,
 		AuthTime: authTime(claims.AuthTime),
 		AMR:      claims.AMR,
+		ClientID: claims.AZP,
 	}, nil
 }
 

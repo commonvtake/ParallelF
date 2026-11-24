@@ -108,6 +108,8 @@ A device starts in groups named after its owner's platform roles (an owner's dev
 
 Activating needs a sign-in within `PF_VPN_MAX_AUTH_AGE` (15 minutes); otherwise the API answers 403 `reauthentication-required` and the dashboard offers "Sign in again", which asks the identity provider for the password again (`max_age=0`). `PF_VPN_REQUIRE_MFA=true` additionally demands a second factor in the token's `amr` claim; the development realm has no second factor configured, so it is off by default.
 
+Tokens from the password grant carry no `auth_time` in Keycloak, so they can never prove a recent sign-in. The local stack therefore exempts the development CLI client (`PF_VPN_STEP_UP_EXEMPT_CLIENTS=parallelf-dev-cli`), which scripts and tests use and which exists only in the development realm; the dashboard's tokens are always checked. Leave the setting empty anywhere else.
+
 ### Policies
 
 A policy says: devices in these **groups** may (allow) or may not (deny) reach these **destinations** over this **protocol** and these **ports**. Destinations are `platform` (the gateway's tunnel address, where the dashboard and API can be published) or IPv4 CIDRs outside the tunnel. Lower priorities run first; the first match decides; anything unmatched is dropped. Two policies ship with the platform:
@@ -169,6 +171,7 @@ The agent's sync is a long-poll: pf-vpnd holds it open until the desired-state r
 | `PF_VPN_ACTIVATION_TTL` / `_MIN` / `_MAX` | 8h / 30s / 12h | Activation length |
 | `PF_VPN_MAX_AUTH_AGE` | 15m | Sign-in freshness needed to activate (0 disables) |
 | `PF_VPN_REQUIRE_MFA` | false | Also require a second factor (`amr`) |
+| `PF_VPN_STEP_UP_EXEMPT_CLIENTS` | empty (local stack: `parallelf-dev-cli`) | OAuth clients whose tokens skip the step-up check; development only |
 | `PF_VPN_DEVICE_TTL` | 2160h (90 days) | Device lifetime |
 | `PF_VPN_GATEWAY_TIMEOUT` | 45s | Silence after which a gateway is NOT_READY |
 

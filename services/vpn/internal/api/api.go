@@ -53,6 +53,10 @@ type Activation struct {
 	MaxAuthAge time.Duration
 	// RequireMFA additionally demands a second factor in the token's amr.
 	RequireMFA bool
+	// ExemptClients are OAuth clients whose tokens skip the step-up check.
+	// Only for development: the local realm's password-grant CLI client
+	// gets tokens without auth_time, and there is no browser to sign in again.
+	ExemptClients []string
 }
 
 // API serves the routes.
@@ -368,6 +372,9 @@ type ActivationRequest struct {
 // checkStepUp enforces the recent (and optionally multi-factor) sign-in
 // that activation requires.
 func (a *API) checkStepUp(p authn.Principal) error {
+	if p.ClientID != "" && slices.Contains(a.activation.ExemptClients, p.ClientID) {
+		return nil
+	}
 	if a.activation.RequireMFA && !slices.ContainsFunc(p.AMR, func(m string) bool {
 		return m == "otp" || m == "mfa" || m == "hwk" || m == "swk"
 	}) {

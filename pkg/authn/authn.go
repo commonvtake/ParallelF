@@ -34,6 +34,8 @@ type Principal struct {
 	// recent or multi-factor sign-in, such as VPN activation, check these.
 	AuthTime time.Time `json:"-"`
 	AMR      []string  `json:"-"`
+	// ClientID is the OAuth client the token was issued to (azp).
+	ClientID string `json:"-"`
 }
 
 // Verifier validates a raw bearer token and returns its Principal.

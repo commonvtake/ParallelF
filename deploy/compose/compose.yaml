@@ -247,6 +247,9 @@ services:
       PF_VPN_JOIN_TOKEN: ${PF_VPN_JOIN_TOKEN:?run "make init" to add the new settings to .env}
       PF_VPN_PSK_KEY: ${PF_VPN_PSK_KEY:-}
       PF_VPN_MAX_AUTH_AGE: ${PF_VPN_MAX_AUTH_AGE:-15m}
+      # The development realm's password-grant CLI client issues tokens
+      # without auth_time; it exists only in the local realm.
+      PF_VPN_STEP_UP_EXEMPT_CLIENTS: parallelf-dev-cli
     ports:
       - "127.0.0.1:9103:9103"
     healthcheck:
