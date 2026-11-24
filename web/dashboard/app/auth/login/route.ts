@@ -14,9 +14,10 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const config = getConfig();
   const returnTo = sanitizeReturnTo(request.nextUrl.searchParams.get("returnTo"));
+  const reauthenticate = request.nextUrl.searchParams.get("reauth") === "1";
 
   try {
-    const { url, pending } = await beginLogin(returnTo);
+    const { url, pending } = await beginLogin(returnTo, { reauthenticate });
     getSessionStore().createPendingLogin(pending);
 
     const response = NextResponse.redirect(url, 303);

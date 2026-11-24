@@ -75,6 +75,7 @@ function toTokenSet(tokens: client.TokenEndpointResponse & client.TokenEndpointR
 /** Creates the PKCE verifier, state and nonce and the provider login URL. */
 export async function beginLogin(
   returnTo: string,
+  options: { reauthenticate?: boolean } = {},
 ): Promise<{ url: URL; pending: Omit<PendingLogin, "expiresAt"> }> {
   const configuration = await getConfiguration();
 
@@ -89,6 +90,10 @@ export async function beginLogin(
     code_challenge_method: "S256",
     state,
     nonce,
+    // Step-up: max_age=0 makes the provider ask for the credentials again
+    // even with a live single sign-on session, which refreshes auth_time
+    // (VPN activation requires a recent sign-in).
+    ...(options.reauthenticate ? { max_age: "0" } : {}),
   });
   return { url, pending: { state, codeVerifier, nonce, returnTo } };
 }

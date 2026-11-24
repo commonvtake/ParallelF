@@ -14,6 +14,8 @@ interface Props {
   /** Where to go after a successful delete; the page refreshes otherwise. */
   redirectTo?: string;
   disabled?: boolean;
+  /** The action's name on its buttons: "Delete" (default), "Revoke"... */
+  verb?: string;
 }
 
 /**
@@ -21,7 +23,7 @@ interface Props {
  * DELETE without ?confirm=<name> is refused with 428, so a stray request
  * cannot destroy anything.
  */
-export function ConfirmDelete({ noun, name, path, redirectTo, disabled }: Props) {
+export function ConfirmDelete({ noun, name, path, redirectTo, disabled, verb = "Delete" }: Props) {
   const router = useRouter();
   const inputId = useId();
   const [open, setOpen] = useState(false);
@@ -57,10 +59,10 @@ export function ConfirmDelete({ noun, name, path, redirectTo, disabled }: Props)
         type="button"
         disabled={disabled}
         onClick={() => setOpen(true)}
-        aria-label={`Delete ${noun} ${name}`}
+        aria-label={`${verb} ${noun} ${name}`}
         className="rounded-md border border-rose-300 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
       >
-        Delete
+        {verb}
       </button>
     );
   }
@@ -71,8 +73,7 @@ export function ConfirmDelete({ noun, name, path, redirectTo, disabled }: Props)
       className="flex w-full flex-col gap-2 rounded-md border border-rose-200 bg-rose-50 p-3 sm:w-auto"
     >
       <label htmlFor={inputId} className="text-sm text-rose-900">
-        This permanently deletes the {noun}. Type <span className="font-mono font-medium">{name}</span> to
-        confirm.
+        This cannot be undone. Type <span className="font-mono font-medium">{name}</span> to confirm.
       </label>
       <input
         id={inputId}
@@ -93,7 +94,7 @@ export function ConfirmDelete({ noun, name, path, redirectTo, disabled }: Props)
           disabled={busy || typed !== name}
           className="rounded-md bg-rose-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-800 disabled:opacity-50"
         >
-          {busy ? "Deleting…" : `Delete ${noun}`}
+          {busy ? "Working…" : `${verb} ${noun}`}
         </button>
         <button
           type="button"

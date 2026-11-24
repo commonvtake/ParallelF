@@ -27,10 +27,12 @@ test("the overview shows live platform status after signing in", async ({ page }
     "pf-gateway",
     "core",
     "cloud",
+    "vpn",
     "ai",
     "identity-provider",
     "core-postgres",
     "cloud-postgres",
+    "vpn-postgres",
   ];
   for (const name of components) {
     await expect(page.getByTestId(`component-${name}`)).toContainText("Operational");
@@ -61,7 +63,7 @@ test("every section is reachable and unbuilt sections say so", async ({ page }) 
 
   const sections = [
     { label: "Cloud", path: "/cloud", implemented: true },
-    { label: "VPN", path: "/vpn", implemented: false },
+    { label: "VPN", path: "/vpn", implemented: true },
     { label: "Network Monitoring", path: "/network", implemented: false },
     { label: "Security Lab", path: "/lab", implemented: false },
     { label: "AI Investigator", path: "/ai", implemented: false },

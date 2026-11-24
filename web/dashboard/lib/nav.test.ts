@@ -17,7 +17,7 @@ describe("navigation", () => {
 
   it("marks the built sections as available", () => {
     const available = SECTIONS.filter((section) => section.status === "available").map((s) => s.label);
-    expect(available).toEqual(["Overview", "Cloud", "Settings"]);
+    expect(available).toEqual(["Overview", "Cloud", "VPN", "Settings"]);
   });
 
   it("has unique, absolute hrefs", () => {
